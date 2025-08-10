@@ -1,168 +1,164 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="utf-8" />
-  <title>Veera Draw Entry</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-<header>
-  <img src="logo.png" alt="Veera logo">
-</header>
-<h1>Lucky Draw</h1>
+  <head>
+    <meta charset="utf-8" />
+    <title>Veera Draw Entry</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <img src="logo.png" alt="Veera logo" />
+    </header>
+    <h1>Lucky Draw</h1>
 
-<div id="timer" class="timer"></div>
+    <div id="timer" class="timer"></div>
 
-<div id="entryForm" class="container">
-  <form id="drawForm">
-    <input type="text" id="name" placeholder="Your Name" required autocomplete="name">
-    <input type="text" id="seat" placeholder="Seat Number" required autocomplete="off">
-    <button type="submit">Submit Entry</button>
-  </form>
-  <div id="submitMsg" style="text-align:center;margin-top:8px;color:#5e1d7d"></div>
-</div>
+    <div id="entryForm" class="container">
+      <form id="drawForm">
+        <input
+          type="text"
+          id="name"
+          placeholder="Your Name"
+          required
+          autocomplete="name"
+        />
+        <input
+          type="text"
+          id="seat"
+          placeholder="Seat Number"
+          required
+          autocomplete="off"
+        />
+        <button type="submit">Submit Entry</button>
+      </form>
+      <div
+        id="submitMsg"
+        style="text-align: center; margin-top: 8px; color: #5e1d7d"
+      ></div>
+    </div>
 
-<div id="message" class="container"></div>
+    <div id="message" class="container"></div>
 
-<!-- Firebase SDKs -->
-<script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-firestore-compat.js"></script>
+    <!-- Shared Firebase init -->
+    <script type="module" src="firebase-init.js"></script>
+    <script type="module">
+      import { db } from './firebase-init.js';
+      import { doc, getDoc, onSnapshot, collection, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
-<!-- Shared config/init -->
-<script src="firebase-init.js"></script>
+      if (!db) {
+        document.getElementById('message').textContent = 'Firebase not initialized.';
+      }
 
-<script>
-if (!db) {
-  document.getElementById('message').textContent = 'Firebase not initialized.';
-}
+      // Utilities
+      function formatSecondsLeft(msEnd) {
+        return Math.max(0, Math.floor((msEnd - Date.now()) / 1000));
+      }
 
-// Utilities
-function formatSecondsLeft(msEnd) {
-  return Math.max(0, Math.floor((msEnd - Date.now()) / 1000));
-}
+      const stateDocRef = doc(db, 'state', 'draw');
+      let localCountdownInterval;
 
-const stateDocRef = db.doc('state/draw');
-let localCountdownInterval;
+      function startLocalCountdown(seconds) {
+        clearInterval(localCountdownInterval);
+        let left = seconds;
+        document.getElementById('timer').textContent = `Time left: ${left}s`;
+        localCountdownInterval = setInterval(() => {
+          left--;
+          document.getElementById('timer').textContent = `Time left: ${Math.max(0,left)}s`;
+          if (left <= 0) {
+            clearInterval(localCountdownInterval);
+            hideForm();
+          }
+        }, 1000);
+      }
 
-function startLocalCountdown(seconds) {
-  clearInterval(localCountdownInterval);
-  let left = seconds;
-  document.getElementById('timer').textContent = `Time left: ${left}s`;
-  localCountdownInterval = setInterval(() => {
-    left--;
-    document.getElementById('timer').textContent = `Time left: ${left}s`;
-    if (left <= 0) {
-      clearInterval(localCountdownInterval);
-      hideForm();
-    }
-  }, 1000);
-}
+      function showForm() {
+        document.getElementById('entryForm').style.display = 'block';
+        document.getElementById('message').textContent = '';
+        document.getElementById('submitMsg').textContent = '';
+      }
 
-function showForm() {
-  document.getElementById('entryForm').style.display = 'block';
-  document.getElementById('message').textContent = '';
-  document.getElementById('submitMsg').textContent = '';
-}
+      function hideForm() {
+        document.getElementById('entryForm').style.display = 'none';
+      }
 
-function hideForm() {
-  document.getElementById('entryForm').style.display = 'none';
-}
+      // Realtime listener for draw state
+      onSnapshot(stateDocRef, (snap) => {
+        const data = snap.exists() ? snap.data() : null;
+        if (!data || data.state !== 'running') {
+          hideForm();
+          document.getElementById('timer').textContent = '';
+          if (data && data.state === 'finished' && data.winners) {
+            showWinners(data);
+          } else {
+            document.getElementById('message').textContent = 'Draw closed.';
+          }
+          return;
+        }
+        const endTime = data.startTime + data.duration * 1000;
+        const left = formatSecondsLeft(endTime);
+        showForm();
+        startLocalCountdown(left);
+      });
 
-/* On state changes */
-stateDocRef.onSnapshot(doc => {
-  const data = doc.exists ? doc.data() : null;
-  if (!data || data.state !== 'running') {
-    hideForm();
-    document.getElementById('timer').textContent = '';
-    if (data && data.state === 'finished' && data.winners) {
-      showWinners(data);
-    } else {
-      document.getElementById('message').textContent = 'Draw closed.';
-    }
-    return;
-  }
+      // Submit entry
+      document.getElementById('drawForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('name').value.trim();
+        const seat = document.getElementById('seat').value.trim();
+        if (!name || !seat) return;
 
-  // running
-  const endTime = data.startTime + data.duration * 1000;
-  const left = formatSecondsLeft(endTime);
-  showForm();
-  startLocalCountdown(left);
-});
+        const stateSnap = await getDoc(stateDocRef);
+        if (!stateSnap.exists()) {
+          document.getElementById('submitMsg').textContent = 'No active draw.';
+          return;
+        }
+        const state = stateSnap.data();
+        if (state.state !== 'running') {
+          document.getElementById('submitMsg').textContent = 'Draw not running.';
+          return;
+        }
+        try {
+          await addDoc(collection(db, 'entries'), {
+            drawId: state.drawId,
+            name,
+            seat,
+            timestamp: serverTimestamp()
+          });
+          document.getElementById('submitMsg').textContent = 'Entry submitted — good luck!';
+          document.getElementById('drawForm').reset();
+        } catch (err) {
+          console.error(err);
+          document.getElementById('submitMsg').textContent = 'Submission failed — try again.';
+        }
+      });
 
-/* Submit entries */
-document.getElementById('drawForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const name = document.getElementById('name').value.trim();
-  const seat = document.getElementById('seat').value.trim();
-  if (!name || !seat) return;
-
-  const stateSnap = await stateDocRef.get();
-  if (!stateSnap.exists) {
-    document.getElementById('submitMsg').textContent = 'No active draw.';
-    return;
-  }
-  const state = stateSnap.data();
-  if (state.state !== 'running') {
-    document.getElementById('submitMsg').textContent = 'Draw not running.';
-    return;
-  }
-
-  try {
-    await db.collection('entries').add({
-      drawId: state.drawId,
-      name,
-      seat,
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    });
-    document.getElementById('submitMsg').textContent = 'Entry submitted — good luck!';
-    document.getElementById('drawForm').reset();
-  } catch (err) {
-    console.error(err);
-    document.getElementById('submitMsg').textContent = 'Submission failed — try again.';
-  }
-});
-
-/* Show winners table (grouped) */
-function showWinners(data) {
-  if (!data.winners || !data.winners.length) {
-    document.getElementById('message').textContent = 'No winners.';
-    return;
-  }
-
-  let html = `<h3>Winners</h3>
-    <table class="winner-table">
-      <tr><th>Prize</th><th>Name</th><th>Seat</th></tr>`;
-
-  let prizeIndex = 1;
-  for (let i = 0; i < (data.keychains || 0); i++) {
-    const w = data.winners[i] || { name: 'Nil', seat: 'Nil' };
-    html += `<tr class="winner-row" id="winner-${prizeIndex}">
-               <td>Keychain #${i+1}</td>
-               <td>${w.name}</td>
-               <td>${w.seat}</td>
-             </tr>`;
-    prizeIndex++;
-  }
-  for (let i = (data.keychains || 0); i < ((data.keychains||0) + (data.tshirts||0)); i++) {
-    const w = data.winners[i] || { name: 'Nil', seat: 'Nil' };
-    html += `<tr class="winner-row" id="winner-${prizeIndex}">
-               <td>T-Shirt #${i - (data.keychains||0) + 1}</td>
-               <td>${w.name}</td>
-               <td>${w.seat}</td>
-             </tr>`;
-    prizeIndex++;
-  }
-  html += `</table>`;
-  document.getElementById('message').innerHTML = html;
-
-  // animate rows
-  for (let i = 0; i < prizeIndex-1; i++) {
-    setTimeout(() => {
-      const el = document.getElementById(`winner-${i+1}`);
-      if (el) el.classList.add('show');
-    }, i * 800);
-  }
-}
-</script>
-</body>
+      // Show winners table (grouped)
+      function showWinners(data) {
+        if (!data.winners || !data.winners.length) {
+          document.getElementById('message').textContent = 'No winners.';
+          return;
+        }
+        let html = `<h3>Winners</h3><table class="winner-table"><tr><th>Prize</th><th>Name</th><th>Seat</th></tr>`;
+        let prizeIndex = 1;
+        for (let i = 0; i < (data.keychains || 0); i++) {
+          const w = data.winners[i] || { name: 'Nil', seat: 'Nil' };
+          html += `<tr class="winner-row" id="winner-${prizeIndex}"><td>Keychain #${i + 1}</td><td>${w.name}</td><td>${w.seat}</td></tr>`;
+          prizeIndex++;
+        }
+        for (let i = data.keychains || 0; i < (data.keychains || 0) + (data.tshirts || 0); i++) {
+          const w = data.winners[i] || { name: 'Nil', seat: 'Nil' };
+          html += `<tr class="winner-row" id="winner-${prizeIndex}"><td>T-Shirt #${i - (data.keychains || 0) + 1}</td><td>${w.name}</td><td>${w.seat}</td></tr>`;
+          prizeIndex++;
+        }
+        html += `</table>`;
+        document.getElementById('message').innerHTML = html;
+        for (let i = 0; i < prizeIndex - 1; i++) {
+          setTimeout(() => {
+            const el = document.getElementById(`winner-${i + 1}`);
+            if (el) el.classList.add('show');
+          }, i * 800);
+        }
+      }
+    </script>
+  </body>
 </html>

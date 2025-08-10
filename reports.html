@@ -14,76 +14,75 @@
   <button id="clearBtn">Clear Reports</button>
 </div>
 
-<!-- Firebase SDKs -->
-<script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-firestore-compat.js"></script>
 
 <!-- Shared config/init -->
-<script src="firebase-init.js"></script>
+<script type="module" src="firebase-init.js"></script>
+<script type="module">
+  import { db } from './firebase-init.js';
+  import { collection, query, orderBy, getDocs, writeBatch, doc } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
-<script>
-if (!db) {
-  alert('Firebase not initialized. Check firebase-init.js');
-}
+  if (!db) alert('Firebase not initialized. Check firebase-init.js');
 
-async function loadReports() {
-  const snaps = await db.collection('reports').orderBy('createdAt', 'desc').get();
-  const reports = snaps.docs.map(d => ({ id: d.id, ...d.data() }));
-  const container = document.getElementById('reportsContainer');
-  if (!reports.length) {
-    container.innerHTML = '<p>No reports found.</p>';
-    return;
+  async function loadReports() {
+    const q = query(collection(db, 'reports'), orderBy('createdAt', 'desc'));
+    const snaps = await getDocs(q);
+    const reports = snaps.docs.map(d => ({ id: d.id, ...d.data() }));
+    const container = document.getElementById('reportsContainer');
+    if (!reports.length) {
+      container.innerHTML = '<p>No reports found.</p>';
+      return;
+    }
+    let html = '<div>';
+    reports.forEach(r => {
+      html += `<div style="margin-bottom:18px;padding:12px;border-radius:8px;background:#fff;">
+        <strong>Draw ID:</strong> ${r.drawId} <br>
+        <strong>Show Time:</strong> ${r.showTime || '-'} <br>
+        <strong>Audience:</strong> ${r.audience || '-'} <br>
+        <strong>Keychains:</strong> ${r.keychains || 0} <br>
+        <strong>T-Shirts:</strong> ${r.tshirts || 0} <br>
+        <strong>Winners:</strong>
+        <table class="winner-table" style="margin-top:8px;">
+          <tr><th>Prize</th><th>Name</th><th>Seat</th></tr>
+          ${r.winners && r.winners.length ? r.winners.map((w,i) => {
+            const prize = i < (r.keychains||0) ? `Keychain #${i+1}` : `T-Shirt #${i - (r.keychains||0) + 1}`;
+            return `<tr><td>${prize}</td><td>${w.name}</td><td>${w.seat}</td></tr>`;
+          }).join('') : '<tr><td colspan="3">No winners</td></tr>'}
+        </table>
+      </div>`;
+    });
+    html += '</div>';
+    container.innerHTML = html;
   }
 
-  let html = '<div>';
-  reports.forEach(r => {
-    html += `<div style="margin-bottom:18px;padding:12px;border-radius:8px;background:#fff;">
-      <strong>Draw ID:</strong> ${r.drawId} <br>
-      <strong>Show Time:</strong> ${r.showTime || '-'} <br>
-      <strong>Audience:</strong> ${r.audience || '-'} <br>
-      <strong>Keychains:</strong> ${r.keychains || 0} <br>
-      <strong>T-Shirts:</strong> ${r.tshirts || 0} <br>
-      <strong>Winners:</strong>
-      <table class="winner-table" style="margin-top:8px;">
-        <tr><th>Prize</th><th>Name</th><th>Seat</th></tr>
-        ${r.winners && r.winners.length ? r.winners.map((w,i) => {
-          const prize = i < (r.keychains||0) ? `Keychain #${i+1}` : `T-Shirt #${i - (r.keychains||0) + 1}`;
-          return `<tr><td>${prize}</td><td>${w.name}</td><td>${w.seat}</td></tr>`;
-        }).join('') : '<tr><td colspan="3">No winners</td></tr>'}
-      </table>
-    </div>`;
+  document.getElementById('exportBtn').addEventListener('click', async () => {
+    const q = query(collection(db, 'reports'), orderBy('createdAt','desc'));
+    const snaps = await getDocs(q);
+    const reports = snaps.docs.map(d => ({ id: d.id, ...d.data() }));
+    if (!reports.length) return alert('No reports to export');
+    let csv = 'DrawId,ShowTime,Audience,Keychains,TShirts,Winners\n';
+    reports.forEach(r => {
+      const winners = r.winners ? r.winners.map(w => `${w.name} (${w.seat})`).join('; ') : '';
+      // Escape quotes by doubling them
+      const esc = v => (`${v}`.replace(/"/g,'""'));
+      csv += `"${esc(r.drawId)}","${esc(r.showTime || '')}",${r.audience || 0},${r.keychains || 0},${r.tshirts || 0},"${esc(winners)}"\n`;
+    });
+    const blob = new Blob([csv], {type: 'text/csv'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'reports.csv'; a.click();
   });
-  html += '</div>';
-  container.innerHTML = html;
-}
 
-document.getElementById('exportBtn').addEventListener('click', async () => {
-  const snaps = await db.collection('reports').orderBy('createdAt','desc').get();
-  const reports = snaps.docs.map(d => ({ id: d.id, ...d.data() }));
-  if (!reports.length) return alert('No reports to export');
-
-  let csv = 'DrawId,ShowTime,Audience,Keychains,TShirts,Winners\n';
-  reports.forEach(r => {
-    const winners = r.winners ? r.winners.map(w => `${w.name} (${w.seat})`).join('; ') : '';
-    csv += `"\${r.drawId}","\${r.showTime || ''}",\${r.audience || 0},\${r.keychains || 0},\${r.tshirts || 0}","\${winners}"\n`;
+  document.getElementById('clearBtn').addEventListener('click', async () => {
+    if (!confirm('This will permanently delete ALL reports. Are you sure?')) return;
+    const snaps = await getDocs(collection(db, 'reports'));
+    const batch = writeBatch(db);
+    snaps.forEach(d => batch.delete(doc(db, 'reports', d.id)));
+    await batch.commit();
+    alert('All reports deleted.');
+    loadReports();
   });
-  const blob = new Blob([csv], {type: 'text/csv'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = 'reports.csv'; a.click();
-});
 
-document.getElementById('clearBtn').addEventListener('click', async () => {
-  if (!confirm('This will permanently delete ALL reports. Are you sure?')) return;
-  const snaps = await db.collection('reports').get();
-  const batch = db.batch();
-  snaps.forEach(doc => batch.delete(doc.ref));
-  await batch.commit();
-  alert('All reports deleted.');
   loadReports();
-});
-
-loadReports();
 </script>
 </body>
 </html>
