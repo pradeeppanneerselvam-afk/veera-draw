@@ -1,211 +1,252 @@
 <!DOCTYPE html>
 <html>
-<head>
-  <meta charset="utf-8" />
-  <title>Admin - Veera Draw</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-<header>
-  <img src="logo.png" alt="Veera logo">
-</header>
+  <head>
+    <meta charset="utf-8" />
+    <title>Admin - Veera Draw</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <img src="logo.png" alt="Veera logo" />
+    </header>
 
-<div class="container">
-  <h1>Admin Panel</h1>
+    <div class="container">
+      <h1>Admin Panel</h1>
 
-  <label>Show Date/Time:</label>
-  <input type="datetime-local" id="showTime">
+      <label>Show Date/Time:</label>
+      <input type="datetime-local" id="showTime" />
 
-  <label>Audience Size:</label>
-  <input type="number" id="audience">
+      <label>Audience Size:</label>
+      <input type="number" id="audience" />
 
-  <label>Keychains:</label>
-  <input type="number" id="keychains">
+      <label>Keychains:</label>
+      <input type="number" id="keychains" />
 
-  <label>T-Shirts:</label>
-  <input type="number" id="tshirts">
+      <label>T-Shirts:</label>
+      <input type="number" id="tshirts" />
 
-  <label>Duration (sec):</label>
-  <input type="number" id="duration" value="45">
+      <label>Duration (sec):</label>
+      <input type="number" id="duration" value="45" />
 
-  <button id="startBtn">Start Draw</button>
-  <h3 id="adminTimer">Time left: 0s</h3>
-  <h3 id="entryCount"></h3>
-  <div id="winnerSection"></div>
-  <button id="genBtn">Generate Winners</button>
-  <button id="resetBtn">Reset Draw</button>
-  <button onclick="window.location.href='reports.html'">View Reports</button>
-</div>
+      <button id="startBtn">Start Draw</button>
+      <h3 id="adminTimer">Time left: 0s</h3>
+      <h3 id="entryCount"></h3>
+      <div id="winnerSection"></div>
+      <button id="genBtn">Generate Winners</button>
+      <button id="resetBtn">Reset Draw</button>
+      <button onclick="window.location.href='reports.html'">
+        View Reports
+      </button>
+    </div>
 
-<!-- Firebase SDKs -->
-<script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.24.0/firebase-firestore-compat.js"></script>
+    <!-- Shared firebase init -->
+    <script type="module" src="firebase-init.js"></script>
+    <script type="module">
+      import { db } from './firebase-init.js';
+      import { doc, setDoc, getDoc, onSnapshot, collection, query, where, getDocs, addDoc, deleteDoc, serverTimestamp, writeBatch } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
-<!-- Shared config/init -->
-<script src="firebase-init.js"></script>
+      document.addEventListener('DOMContentLoaded', () => {
+        if (!db) alert('Firebase not initialized. Check firebase-init.js');
 
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  if (!db) {
-    alert('Firebase not initialized. Check firebase-init.js');
-  }
+        const stateDocRef = doc(db, 'state', 'draw');
 
-  const stateDocRef = db.doc('state/draw');
-
-  function now() { return Date.now(); }
-
-  /* Start draw */
-  document.getElementById('startBtn').addEventListener('click', async () => {
-    if (!confirm("Start a new draw? This will clear any current entries.")) return;
-
-    const drawId = Date.now().toString();
-    const state = {
-      drawId,
-      state: "running",
-      startTime: Date.now(),
-      duration: parseInt(document.getElementById('duration').value, 10),
-      audience: parseInt(document.getElementById('audience').value, 10),
-      keychains: parseInt(document.getElementById('keychains').value, 10),
-      tshirts: parseInt(document.getElementById('tshirts').value, 10)
-    };
-    try {
-      await stateDocRef.set(state);
-      alert('Draw started successfully!');
-    } catch (err) {
-      console.error(err);
-      alert('Failed to start draw.');
-    }
-  });
-
-  /* Observe state in realtime to update timer and entry count */
-  let timerInterval;
-  stateDocRef.onSnapshot(async (snap) => {
-    const data = snap.exists ? snap.data() : null;
-    if (!data) {
-      document.getElementById('adminTimer').textContent = '';
-      document.getElementById('entryCount').textContent = '';
-      document.getElementById('winnerSection').innerHTML = '';
-      return;
-    }
-
-    if (data.state === 'running') {
-      const endTime = data.startTime + data.duration * 1000;
-      if (timerInterval) clearInterval(timerInterval);
-      timerInterval = setInterval(() => {
-        const left = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
-        document.getElementById('adminTimer').textContent = `Time left: ${left}s`;
-        if (left <= 0) {
-          clearInterval(timerInterval);
-          document.getElementById('adminTimer').textContent = 'Draw closed';
+        function now() {
+          return Date.now();
         }
-      }, 1000);
-      document.getElementById('winnerSection').innerHTML = '';
-      document.getElementById('entryCount').textContent = '';
-    } else if (data.state === 'finished') {
-      document.getElementById('adminTimer').textContent = 'Draw closed';
-      const entriesSnap = await db.collection('entries').where('drawId', '==', data.drawId).get();
-      const count = entriesSnap.size;
-      document.getElementById('entryCount').textContent = `Total Entries: ${count}`;
-      showWinnersTable(data);
-    }
-  });
 
-  /* show winners grouped table */
-  function showWinnersTable(state) {
-    if (!state.winners || !state.winners.length) {
-      document.getElementById('winnerSection').innerHTML = '';
-      return;
-    }
-    let tableHTML = `<h3>Winners</h3>
+        /* Start draw */
+        document
+          .getElementById("startBtn")
+          .addEventListener("click", async () => {
+            if (
+              !confirm("Start a new draw? This will clear any current entries.")
+            )
+              return;
+
+            const drawId = Date.now().toString();
+            const state = {
+              drawId,
+              state: "running",
+              startTime: Date.now(),
+              duration: parseInt(document.getElementById("duration").value, 10),
+              audience: parseInt(document.getElementById("audience").value, 10),
+              keychains: parseInt(
+                document.getElementById("keychains").value,
+                10
+              ),
+              tshirts: parseInt(document.getElementById("tshirts").value, 10),
+            };
+            try {
+              await setDoc(stateDocRef, state);
+              alert("Draw started successfully!");
+            } catch (err) {
+              console.error(err);
+              alert("Failed to start draw.");
+            }
+          });
+
+        /* Observe state in realtime to update timer and entry count */
+        let timerInterval;
+        onSnapshot(stateDocRef, async (snap) => {
+          const data = snap.exists() ? snap.data() : null;
+          if (!data) {
+            document.getElementById("adminTimer").textContent = "";
+            document.getElementById("entryCount").textContent = "";
+            document.getElementById("winnerSection").innerHTML = "";
+            return;
+          }
+
+          if (data.state === "running") {
+            const endTime = data.startTime + data.duration * 1000;
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+              const left = Math.max(
+                0,
+                Math.floor((endTime - Date.now()) / 1000)
+              );
+              document.getElementById(
+                "adminTimer"
+              ).textContent = `Time left: ${left}s`;
+              if (left <= 0) {
+                clearInterval(timerInterval);
+                document.getElementById("adminTimer").textContent =
+                  "Draw closed";
+              }
+            }, 1000);
+            document.getElementById("winnerSection").innerHTML = "";
+            document.getElementById("entryCount").textContent = "";
+          } else if (data.state === "finished") {
+            document.getElementById("adminTimer").textContent = "Draw closed";
+            const entriesQ = query(collection(db, 'entries'), where('drawId', '==', data.drawId));
+            const entriesSnap = await getDocs(entriesQ);
+            const count = entriesSnap.size;
+            document.getElementById(
+              "entryCount"
+            ).textContent = `Total Entries: ${count}`;
+            showWinnersTable(data);
+          }
+        });
+
+        /* show winners grouped table */
+        function showWinnersTable(state) {
+          if (!state.winners || !state.winners.length) {
+            document.getElementById("winnerSection").innerHTML = "";
+            return;
+          }
+          let tableHTML = `<h3>Winners</h3>
       <table class="winner-table">
         <tr><th>Prize</th><th>Name</th><th>Seat</th></tr>`;
-    let prizeIndex = 1;
-    for (let i = 0; i < (state.keychains||0); i++) {
-      const w = state.winners[i] || {name:'Nil', seat:'Nil'};
-      tableHTML += `<tr class="winner-row" id="winner-${prizeIndex}">
-                      <td>Keychain #${i+1}</td>
+          let prizeIndex = 1;
+          for (let i = 0; i < (state.keychains || 0); i++) {
+            const w = state.winners[i] || { name: "Nil", seat: "Nil" };
+            tableHTML += `<tr class="winner-row" id="winner-${prizeIndex}">
+                      <td>Keychain #${i + 1}</td>
                       <td>${w.name}</td>
                       <td>${w.seat}</td>
                     </tr>`;
-      prizeIndex++;
-    }
-    for (let i = (state.keychains||0); i < ((state.keychains||0) + (state.tshirts||0)); i++) {
-      const w = state.winners[i] || {name:'Nil', seat:'Nil'};
-      tableHTML += `<tr class="winner-row" id="winner-${prizeIndex}">
-                      <td>T-Shirt #${i - (state.keychains||0) + 1}</td>
+            prizeIndex++;
+          }
+          for (
+            let i = state.keychains || 0;
+            i < (state.keychains || 0) + (state.tshirts || 0);
+            i++
+          ) {
+            const w = state.winners[i] || { name: "Nil", seat: "Nil" };
+            tableHTML += `<tr class="winner-row" id="winner-${prizeIndex}">
+                      <td>T-Shirt #${i - (state.keychains || 0) + 1}</td>
                       <td>${w.name}</td>
                       <td>${w.seat}</td>
                     </tr>`;
-      prizeIndex++;
-    }
-    tableHTML += `</table>`;
-    document.getElementById('winnerSection').innerHTML = tableHTML;
+            prizeIndex++;
+          }
+          tableHTML += `</table>`;
+          document.getElementById("winnerSection").innerHTML = tableHTML;
 
-    // animate rows
-    for (let i = 0; i < (state.winners||[]).length; i++) {
-      setTimeout(()=> {
-        const el = document.getElementById(`winner-${i+1}`);
-        if (el) el.classList.add('show');
-      }, i * 800);
-    }
-  }
+          // animate rows
+          for (let i = 0; i < (state.winners || []).length; i++) {
+            setTimeout(() => {
+              const el = document.getElementById(`winner-${i + 1}`);
+              if (el) el.classList.add("show");
+            }, i * 800);
+          }
+        }
 
-  /* Generate winners */
-  document.getElementById('genBtn').addEventListener('click', async () => {
-    if (!confirm("Generate winners now? This will end the draw.")) return;
+        /* Generate winners */
+        document
+          .getElementById("genBtn")
+          .addEventListener("click", async () => {
+            if (!confirm("Generate winners now? This will end the draw."))
+              return;
 
-    const stateSnap = await stateDocRef.get();
-    if (!stateSnap.exists) { alert('No active draw.'); return; }
-    const state = stateSnap.data();
+            const stateSnap = await getDoc(stateDocRef);
+            if (!stateSnap.exists()) {
+              alert("No active draw.");
+              return;
+            }
+            const state = stateSnap.data();
+            const entriesQ = query(collection(db, 'entries'), where('drawId', '==', state.drawId));
+            const entriesSnap = await getDocs(entriesQ);
+            let pool = entriesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
 
-    const entriesSnap = await db.collection('entries').where('drawId', '==', state.drawId).get();
-    let pool = entriesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+            const pickRandomUnique = (count) => {
+              const res = [];
+              while (pool.length && res.length < count) {
+                const idx = Math.floor(Math.random() * pool.length);
+                res.push(pool.splice(idx, 1)[0]);
+              }
+              return res;
+            };
 
-    const pickRandomUnique = (count) => {
-      const res = [];
-      while (pool.length && res.length < count) {
-        const idx = Math.floor(Math.random() * pool.length);
-        res.push(pool.splice(idx, 1)[0]);
-      }
-      return res;
-    };
+            const keychainWinners = pickRandomUnique(state.keychains || 0);
+            while (keychainWinners.length < (state.keychains || 0))
+              keychainWinners.push({ name: "Nil", seat: "Nil" });
 
-    const keychainWinners = pickRandomUnique(state.keychains || 0);
-    while (keychainWinners.length < (state.keychains || 0)) keychainWinners.push({ name: 'Nil', seat: 'Nil' });
+            const tshirtWinners = pickRandomUnique(state.tshirts || 0);
+            while (tshirtWinners.length < (state.tshirts || 0))
+              tshirtWinners.push({ name: "Nil", seat: "Nil" });
 
-    const tshirtWinners = pickRandomUnique(state.tshirts || 0);
-    while (tshirtWinners.length < (state.tshirts || 0)) tshirtWinners.push({ name: 'Nil', seat: 'Nil' });
+            const winners = [...keychainWinners, ...tshirtWinners];
 
-    const winners = [...keychainWinners, ...tshirtWinners];
+            const finishedState = {
+              ...state,
+              state: "finished",
+              endTime: Date.now(),
+              winners,
+            };
+            await setDoc(stateDocRef, finishedState);
 
-    const finishedState = { ...state, state: 'finished', endTime: Date.now(), winners };
-    await stateDocRef.set(finishedState);
+            await addDoc(collection(db, 'reports'), {
+              drawId: state.drawId,
+              showTime: document.getElementById('showTime').value,
+              audience: state.audience,
+              keychains: state.keychains,
+              tshirts: state.tshirts,
+              winners,
+              createdAt: serverTimestamp()
+            });
 
-    await db.collection('reports').add({
-      drawId: state.drawId,
-      showTime: document.getElementById('showTime').value,
-      audience: state.audience,
-      keychains: state.keychains,
-      tshirts: state.tshirts,
-      winners,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp()
-    });
+            alert("Winners generated and reported.");
+          });
 
-    alert('Winners generated and reported.');
-  });
-
-  /* Reset draw */
-  document.getElementById('resetBtn').addEventListener('click', async () => {
-    if (!confirm("Reset current draw? This clears the draw state but keeps reports.")) return;
-    try {
-      await stateDocRef.delete();
-      alert('Current draw reset.');
-    } catch (err) {
-      console.error(err);
-      alert('Reset failed.');
-    }
-  });
-});
-</script>
-</body>
+        /* Reset draw */
+        document
+          .getElementById("resetBtn")
+          .addEventListener("click", async () => {
+            if (
+              !confirm(
+                "Reset current draw? This clears the draw state but keeps reports."
+              )
+            )
+              return;
+            try {
+              await deleteDoc(stateDocRef);
+              alert("Current draw reset.");
+            } catch (err) {
+              console.error(err);
+              alert("Reset failed.");
+            }
+          });
+      });
+    </script>
+  </body>
 </html>
