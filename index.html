@@ -11,17 +11,17 @@
     </header>
 
     <!-- Welcome Screen -->
-    <div id="welcomeScreen" class="container" style="text-align:center;">
+    <div id="welcomeScreen" class="welcome-container">
       <h1>Welcome to Coolie!</h1>
-      <p style="font-size:1.1em; margin-top:10px;">
+      <p>
         🎉 Veera Cinemas celebrates with an exciting Lucky Draw!  
         Join now for a chance to win amazing prizes.
       </p>
-      <div style="margin-top:20px;">
-        <a href="https://chat.whatsapp.com/FjKFb5hAOuBDs4HEpenxnB?mode=ac_t" target="_blank" style="display:inline-block; padding:12px 20px; background:#25D366; color:#fff; border-radius:8px; font-weight:bold; text-decoration:none; margin:5px;">💬 Join WhatsApp Group</a>
-        <a href="https://www.instagram.com/veeracinemas?igsh=aGcxYndmdGs4MTRy" target="_blank" style="display:inline-block; padding:12px 20px; background:#E4405F; color:#fff; border-radius:8px; font-weight:bold; text-decoration:none; margin:5px;">📸 Follow on Instagram</a>
+      <div class="welcome-buttons">
+        <a href="https://chat.whatsapp.com/FjKFb5hAOuBDs4HEpenxnB?mode=ac_t" target="_blank" class="btn-whatsapp">💬 Join WhatsApp Group</a>
+        <a href="https://www.instagram.com/veeracinemas?igsh=aGcxYndmdGs4MTRy" target="_blank" class="btn-insta">📸 Follow on Instagram</a>
       </div>
-      <p style="margin-top:20px; font-style:italic; color:#555;">
+      <p class="welcome-note">
         Follow us to participate in the Lucky Draw and grab your chance to win exclusive goodies!
       </p>
     </div>
@@ -31,26 +31,11 @@
 
     <div id="entryForm" class="container" style="display:none;">
       <form id="drawForm">
-        <input
-          type="text"
-          id="name"
-          placeholder="Your Name"
-          required
-          autocomplete="name"
-        />
-        <input
-          type="text"
-          id="seat"
-          placeholder="Seat Number"
-          required
-          autocomplete="off"
-        />
+        <input type="text" id="name" placeholder="Your Name" required autocomplete="name" />
+        <input type="text" id="seat" placeholder="Seat Number" required autocomplete="off" />
         <button type="submit">Submit Entry</button>
       </form>
-      <div
-        id="submitMsg"
-        style="text-align: center; margin-top: 8px; color: #5e1d7d"
-      ></div>
+      <div id="submitMsg" style="text-align: center; margin-top: 8px; color: #5e1d7d"></div>
     </div>
 
     <div id="message" class="container"></div>
