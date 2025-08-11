@@ -49,6 +49,7 @@
         document.getElementById('message').textContent = 'Firebase not initialized.';
       }
 
+      
       // Utilities
       function formatSecondsLeft(msEnd) {
         return Math.max(0, Math.floor((msEnd - Date.now()) / 1000));
@@ -92,7 +93,7 @@
           if (data && data.state === 'finished' && data.winners) {
             document.getElementById('bgAudio').pause();
             document.getElementById('bgAudio').currentTime = 0;
-            document.getElementById('winnerAudio').play().catch(err => console.log('Autoplay blocked:', err));
+            const _winner = document.getElementById('winnerAudio'); if (_winner) { _winner.muted = false; _winner.play().catch(err => console.log('Autoplay blocked:', err)); }
             showWinners(data);
           } else {
             document.getElementById('message').textContent = 'Draw closed.';
@@ -102,13 +103,16 @@
         const endTime = data.startTime + data.duration * 1000;
         const left = formatSecondsLeft(endTime);
         showForm();
-        document.getElementById('bgAudio').play().catch(err => console.log('Autoplay blocked:', err));
+        document.getElementById('bgAudio').play().catch(err => { console.log('Autoplay blocked:', err);  });
         startLocalCountdown(left);
       });
 
       // Submit entry
       document.getElementById('drawForm').addEventListener('submit', async (e) => {
         e.preventDefault();
+        // user interaction - unmute background audio so music can be heard
+        const _bg = document.getElementById('bgAudio');
+        if (_bg) { _bg.muted = false; _bg.play().catch(() => {}); document.getElementById('enableSoundBtn').style.display = 'none'; }
         const name = document.getElementById('name').value.trim();
         const seat = document.getElementById('seat').value.trim();
         if (!name || !seat) return;
