@@ -9,11 +9,27 @@
     <header>
       <img src="logo.png" alt="Veera logo" />
     </header>
-    <h1>Lucky Draw</h1>
 
+    <!-- Welcome Screen -->
+    <div id="welcomeScreen" class="container" style="text-align:center;">
+      <h1>Welcome to Coolie!</h1>
+      <p style="font-size:1.1em; margin-top:10px;">
+        🎉 Veera Cinemas celebrates with an exciting Lucky Draw!  
+        Join now for a chance to win amazing prizes.
+      </p>
+      <div style="margin-top:20px;">
+        <a href="https://chat.whatsapp.com/FjKFb5hAOuBDs4HEpenxnB?mode=ac_t" target="_blank" style="display:inline-block; padding:12px 20px; background:#25D366; color:#fff; border-radius:8px; font-weight:bold; text-decoration:none; margin:5px;">💬 Join WhatsApp Group</a>
+        <a href="https://www.instagram.com/veeracinemas?igsh=aGcxYndmdGs4MTRy" target="_blank" style="display:inline-block; padding:12px 20px; background:#E4405F; color:#fff; border-radius:8px; font-weight:bold; text-decoration:none; margin:5px;">📸 Follow on Instagram</a>
+      </div>
+      <p style="margin-top:20px; font-style:italic; color:#555;">
+        Follow us to participate in the Lucky Draw and grab your chance to win exclusive goodies!
+      </p>
+    </div>
+
+    <h1>Lucky Draw</h1>
     <div id="timer" class="timer"></div>
 
-    <div id="entryForm" class="container">
+    <div id="entryForm" class="container" style="display:none;">
       <form id="drawForm">
         <input
           type="text"
@@ -71,6 +87,7 @@
       }
 
       function showForm() {
+        document.getElementById('welcomeScreen').style.display = 'none';
         document.getElementById('entryForm').style.display = 'block';
         document.getElementById('message').textContent = '';
         document.getElementById('submitMsg').textContent = '';
@@ -80,22 +97,37 @@
         document.getElementById('entryForm').style.display = 'none';
       }
 
+      function showWelcome() {
+        document.getElementById('welcomeScreen').style.display = 'block';
+        document.getElementById('entryForm').style.display = 'none';
+        document.getElementById('message').innerHTML = '';
+      }
+
       // Realtime listener for draw state
       onSnapshot(stateDocRef, (snap) => {
         const data = snap.exists() ? snap.data() : null;
-        if (!data || data.state !== 'running') {
-          hideForm();
+
+        if (!data) {
+          showWelcome();
           document.getElementById('timer').textContent = '';
+          return;
+        }
+
+        if (data.state !== 'running') {
           document.getElementById('bgAudio').pause();
           document.getElementById('bgAudio').currentTime = 0;
-          if (data && data.state === 'finished' && data.winners) {
+          hideForm();
+          document.getElementById('timer').textContent = '';
+          if (data.state === 'finished' && data.winners) {
             document.getElementById('winnerAudio').play().catch(err => console.log('Autoplay blocked:', err));
             showWinners(data);
           } else {
-            document.getElementById('message').textContent = 'Draw closed.';
+            showWelcome();
           }
           return;
         }
+
+        // Draw running
         const endTime = data.startTime + data.duration * 1000;
         const left = formatSecondsLeft(endTime);
         showForm();
@@ -137,6 +169,7 @@
 
       // Show winners (Name + Seat only)
       function showWinners(data) {
+        document.getElementById('welcomeScreen').style.display = 'none';
         if (!data.winners || !data.winners.length) {
           document.getElementById('message').textContent = 'No winners.';
           return;
