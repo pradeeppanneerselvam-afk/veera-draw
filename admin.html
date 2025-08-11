@@ -1,252 +1,285 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <title>Admin - Veera Draw</title>
-    <link rel="stylesheet" href="style.css" />
-  </head>
-  <body>
-    <header>
-      <img src="logo.png" alt="Veera logo" />
-    </header>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin - Veera Draw</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* Extra admin-specific tweaks */
+    .admin-container {
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      max-width: 500px;
+      margin: 20px auto;
+    }
+    .admin-container h1 {
+      color: #5e1d7d;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      font-weight: bold;
+      margin: 12px 0 5px;
+      color: #5e1d7d;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      border-radius: 6px;
+      border: 2px solid #ccc;
+      font-size: 1em;
+    }
+    input:focus {
+      border-color: #9b4dcc;
+      outline: none;
+    }
+    button {
+      display: block;
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      font-size: 1em;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      background: linear-gradient(90deg, #ffda77, #ffc300);
+      cursor: pointer;
+    }
+    button:hover {
+      background: linear-gradient(90deg, #ffc300, #ffb700);
+    }
+    .winner-table {
+      width: 100%;
+      margin-top: 20px;
+      border-collapse: collapse;
+      font-size: 0.95em;
+    }
+    .winner-table th {
+      background: #5e1d7d;
+      color: #fff;
+      padding: 8px;
+    }
+    .winner-table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+    }
+    @media (max-width: 500px) {
+      .admin-container {
+        padding: 15px;
+        max-width: 95%;
+      }
+      button {
+        font-size: 1.1em;
+        padding: 14px;
+      }
+    }
+  </style>
+</head>
+<body>
 
-    <div class="container">
-      <h1>Admin Panel</h1>
+<header>
+  <img src="logo.png" alt="Veera Cinemas Logo" />
+</header>
 
-      <label>Show Date/Time:</label>
-      <input type="datetime-local" id="showTime" />
+<div class="admin-container">
+  <h1>Admin Panel</h1>
 
-      <label>Audience Size:</label>
-      <input type="number" id="audience" />
+  <label>Show Date/Time:</label>
+  <input type="datetime-local" id="showTime" />
 
-      <label>Keychains:</label>
-      <input type="number" id="keychains" />
+  <label>Audience Size:</label>
+  <input type="number" id="audience" />
 
-      <label>T-Shirts:</label>
-      <input type="number" id="tshirts" />
+  <label>Keychains:</label>
+  <input type="number" id="keychains" />
 
-      <label>Duration (sec):</label>
-      <input type="number" id="duration" value="45" />
+  <label>T-Shirts:</label>
+  <input type="number" id="tshirts" />
 
-      <button id="startBtn">Start Draw</button>
-      <h3 id="adminTimer">Time left: 0s</h3>
-      <h3 id="entryCount"></h3>
-      <div id="winnerSection"></div>
-      <button id="genBtn">Generate Winners</button>
-      <button id="resetBtn">Reset Draw</button>
-      <button onclick="window.location.href='reports.html'">
-        View Reports
-      </button>
-    </div>
+  <label>Duration (sec):</label>
+  <input type="number" id="duration" value="45" />
 
-    <!-- Shared firebase init -->
-    <script type="module" src="firebase-init.js"></script>
-    <script type="module">
-      import { db } from './firebase-init.js';
-      import { doc, setDoc, getDoc, onSnapshot, collection, query, where, getDocs, addDoc, deleteDoc, serverTimestamp, writeBatch } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+  <button id="startBtn">Start Draw</button>
+  <h3 id="adminTimer" style="text-align:center;"></h3>
+  <h3 id="entryCount" style="text-align:center;"></h3>
+  <div id="winnerSection"></div>
+  <button id="genBtn">Generate Winners</button>
+  <button id="resetBtn">Reset Draw</button>
+  <button onclick="window.location.href='reports.html'">View Reports</button>
+</div>
 
-      document.addEventListener('DOMContentLoaded', () => {
-        if (!db) alert('Firebase not initialized. Check firebase-init.js');
+<!-- Firebase Init -->
+<script type="module" src="firebase-init.js"></script>
+<script type="module">
+  import { db } from './firebase-init.js';
+  import { doc, setDoc, getDoc, onSnapshot, collection, query, where, getDocs, addDoc, deleteDoc, serverTimestamp } 
+    from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
-        const stateDocRef = doc(db, 'state', 'draw');
+  document.addEventListener('DOMContentLoaded', () => {
+    if (!db) alert('Firebase not initialized. Check firebase-init.js');
 
-        function now() {
-          return Date.now();
-        }
+    const stateDocRef = doc(db, 'state', 'draw');
 
-        /* Start draw */
-        document
-          .getElementById("startBtn")
-          .addEventListener("click", async () => {
-            if (
-              !confirm("Start a new draw? This will clear any current entries.")
-            )
-              return;
+    /* Start draw */
+    document.getElementById("startBtn").addEventListener("click", async () => {
+      if (!confirm("Start a new draw? This will clear any current entries.")) return;
 
-            const drawId = Date.now().toString();
-            const state = {
-              drawId,
-              state: "running",
-              startTime: Date.now(),
-              duration: parseInt(document.getElementById("duration").value, 10),
-              audience: parseInt(document.getElementById("audience").value, 10),
-              keychains: parseInt(
-                document.getElementById("keychains").value,
-                10
-              ),
-              tshirts: parseInt(document.getElementById("tshirts").value, 10),
-            };
-            try {
-              await setDoc(stateDocRef, state);
-              alert("Draw started successfully!");
-            } catch (err) {
-              console.error(err);
-              alert("Failed to start draw.");
-            }
-          });
+      const drawId = Date.now().toString();
+      const state = {
+        drawId,
+        state: "running",
+        startTime: Date.now(),
+        duration: parseInt(document.getElementById("duration").value, 10),
+        audience: parseInt(document.getElementById("audience").value, 10),
+        keychains: parseInt(document.getElementById("keychains").value, 10),
+        tshirts: parseInt(document.getElementById("tshirts").value, 10),
+      };
+      try {
+        await setDoc(stateDocRef, state);
+        alert("Draw started successfully!");
+      } catch (err) {
+        console.error(err);
+        alert("Failed to start draw.");
+      }
+    });
 
-        /* Observe state in realtime to update timer and entry count */
-        let timerInterval;
-        onSnapshot(stateDocRef, async (snap) => {
-          const data = snap.exists() ? snap.data() : null;
-          if (!data) {
-            document.getElementById("adminTimer").textContent = "";
-            document.getElementById("entryCount").textContent = "";
-            document.getElementById("winnerSection").innerHTML = "";
-            return;
-          }
-
-          if (data.state === "running") {
-            const endTime = data.startTime + data.duration * 1000;
-            if (timerInterval) clearInterval(timerInterval);
-            timerInterval = setInterval(() => {
-              const left = Math.max(
-                0,
-                Math.floor((endTime - Date.now()) / 1000)
-              );
-              document.getElementById(
-                "adminTimer"
-              ).textContent = `Time left: ${left}s`;
-              if (left <= 0) {
-                clearInterval(timerInterval);
-                document.getElementById("adminTimer").textContent =
-                  "Draw closed";
-              }
-            }, 1000);
-            document.getElementById("winnerSection").innerHTML = "";
-            document.getElementById("entryCount").textContent = "";
-          } else if (data.state === "finished") {
+    /* Observe state in realtime */
+    let timerInterval;
+    onSnapshot(stateDocRef, async (snap) => {
+      const data = snap.exists() ? snap.data() : null;
+      if (!data) {
+        document.getElementById("adminTimer").textContent = "";
+        document.getElementById("entryCount").textContent = "";
+        document.getElementById("winnerSection").innerHTML = "";
+        return;
+      }
+      if (data.state === "running") {
+        const endTime = data.startTime + data.duration * 1000;
+        if (timerInterval) clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+          const left = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
+          document.getElementById("adminTimer").textContent = `Time left: ${left}s`;
+          if (left <= 0) {
+            clearInterval(timerInterval);
             document.getElementById("adminTimer").textContent = "Draw closed";
-            const entriesQ = query(collection(db, 'entries'), where('drawId', '==', data.drawId));
-            const entriesSnap = await getDocs(entriesQ);
-            const count = entriesSnap.size;
-            document.getElementById(
-              "entryCount"
-            ).textContent = `Total Entries: ${count}`;
-            showWinnersTable(data);
           }
-        });
+        }, 1000);
+        document.getElementById("winnerSection").innerHTML = "";
+        document.getElementById("entryCount").textContent = "";
+      } else if (data.state === "finished") {
+        document.getElementById("adminTimer").textContent = "Draw closed";
+        const entriesQ = query(collection(db, 'entries'), where('drawId', '==', data.drawId));
+        const entriesSnap = await getDocs(entriesQ);
+        const count = entriesSnap.size;
+        document.getElementById("entryCount").textContent = `Total Entries: ${count}`;
+        showWinnersTable(data);
+      }
+    });
 
-        /* show winners grouped table */
-        function showWinnersTable(state) {
-          if (!state.winners || !state.winners.length) {
-            document.getElementById("winnerSection").innerHTML = "";
-            return;
-          }
-          let tableHTML = `<h3>Winners</h3>
-      <table class="winner-table">
-        <tr><th>Prize</th><th>Name</th><th>Seat</th></tr>`;
-          let prizeIndex = 1;
-          for (let i = 0; i < (state.keychains || 0); i++) {
-            const w = state.winners[i] || { name: "Nil", seat: "Nil" };
-            tableHTML += `<tr class="winner-row" id="winner-${prizeIndex}">
-                      <td>Keychain #${i + 1}</td>
-                      <td>${w.name}</td>
-                      <td>${w.seat}</td>
-                    </tr>`;
-            prizeIndex++;
-          }
-          for (
-            let i = state.keychains || 0;
-            i < (state.keychains || 0) + (state.tshirts || 0);
-            i++
-          ) {
-            const w = state.winners[i] || { name: "Nil", seat: "Nil" };
-            tableHTML += `<tr class="winner-row" id="winner-${prizeIndex}">
-                      <td>T-Shirt #${i - (state.keychains || 0) + 1}</td>
-                      <td>${w.name}</td>
-                      <td>${w.seat}</td>
-                    </tr>`;
-            prizeIndex++;
-          }
-          tableHTML += `</table>`;
-          document.getElementById("winnerSection").innerHTML = tableHTML;
+    /* Winners table */
+    function showWinnersTable(state) {
+      if (!state.winners || !state.winners.length) {
+        document.getElementById("winnerSection").innerHTML = "";
+        return;
+      }
+      let tableHTML = `<h3 style="text-align:center;">Winners</h3>
+        <table class="winner-table">
+          <tr><th>Prize</th><th>Name</th><th>Seat</th></tr>`;
+      let prizeIndex = 1;
+      for (let i = 0; i < (state.keychains || 0); i++) {
+        const w = state.winners[i] || { name: "Nil", seat: "Nil" };
+        tableHTML += `<tr class="winner-row" id="winner-${prizeIndex}">
+            <td>Keychain #${i + 1}</td>
+            <td>${w.name}</td>
+            <td>${w.seat}</td>
+          </tr>`;
+        prizeIndex++;
+      }
+      for (let i = state.keychains || 0; i < (state.keychains || 0) + (state.tshirts || 0); i++) {
+        const w = state.winners[i] || { name: "Nil", seat: "Nil" };
+        tableHTML += `<tr class="winner-row" id="winner-${prizeIndex}">
+            <td>T-Shirt #${i - (state.keychains || 0) + 1}</td>
+            <td>${w.name}</td>
+            <td>${w.seat}</td>
+          </tr>`;
+        prizeIndex++;
+      }
+      tableHTML += `</table>`;
+      document.getElementById("winnerSection").innerHTML = tableHTML;
+    }
 
-          // animate rows
-          for (let i = 0; i < (state.winners || []).length; i++) {
-            setTimeout(() => {
-              const el = document.getElementById(`winner-${i + 1}`);
-              if (el) el.classList.add("show");
-            }, i * 800);
-          }
+    /* Generate winners */
+    document.getElementById("genBtn").addEventListener("click", async () => {
+      if (!confirm("Generate winners now? This will end the draw.")) return;
+
+      const stateSnap = await getDoc(stateDocRef);
+      if (!stateSnap.exists()) {
+        alert("No active draw.");
+        return;
+      }
+      const state = stateSnap.data();
+      const entriesQ = query(collection(db, 'entries'), where('drawId', '==', state.drawId));
+      const entriesSnap = await getDocs(entriesQ);
+      let pool = entriesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+      const pickRandomUnique = (count) => {
+        const res = [];
+        while (pool.length && res.length < count) {
+          const idx = Math.floor(Math.random() * pool.length);
+          res.push(pool.splice(idx, 1)[0]);
         }
+        return res;
+      };
 
-        /* Generate winners */
-        document
-          .getElementById("genBtn")
-          .addEventListener("click", async () => {
-            if (!confirm("Generate winners now? This will end the draw."))
-              return;
+      const keychainWinners = pickRandomUnique(state.keychains || 0);
+      while (keychainWinners.length < (state.keychains || 0))
+        keychainWinners.push({ name: "Nil", seat: "Nil" });
 
-            const stateSnap = await getDoc(stateDocRef);
-            if (!stateSnap.exists()) {
-              alert("No active draw.");
-              return;
-            }
-            const state = stateSnap.data();
-            const entriesQ = query(collection(db, 'entries'), where('drawId', '==', state.drawId));
-            const entriesSnap = await getDocs(entriesQ);
-            let pool = entriesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const tshirtWinners = pickRandomUnique(state.tshirts || 0);
+      while (tshirtWinners.length < (state.tshirts || 0))
+        tshirtWinners.push({ name: "Nil", seat: "Nil" });
 
-            const pickRandomUnique = (count) => {
-              const res = [];
-              while (pool.length && res.length < count) {
-                const idx = Math.floor(Math.random() * pool.length);
-                res.push(pool.splice(idx, 1)[0]);
-              }
-              return res;
-            };
+      const winners = [...keychainWinners, ...tshirtWinners];
 
-            const keychainWinners = pickRandomUnique(state.keychains || 0);
-            while (keychainWinners.length < (state.keychains || 0))
-              keychainWinners.push({ name: "Nil", seat: "Nil" });
+      const finishedState = {
+        ...state,
+        state: "finished",
+        endTime: Date.now(),
+        winners,
+      };
+      await setDoc(stateDocRef, finishedState);
 
-            const tshirtWinners = pickRandomUnique(state.tshirts || 0);
-            while (tshirtWinners.length < (state.tshirts || 0))
-              tshirtWinners.push({ name: "Nil", seat: "Nil" });
-
-            const winners = [...keychainWinners, ...tshirtWinners];
-
-            const finishedState = {
-              ...state,
-              state: "finished",
-              endTime: Date.now(),
-              winners,
-            };
-            await setDoc(stateDocRef, finishedState);
-
-            await addDoc(collection(db, 'reports'), {
-              drawId: state.drawId,
-              showTime: document.getElementById('showTime').value,
-              audience: state.audience,
-              keychains: state.keychains,
-              tshirts: state.tshirts,
-              winners,
-              createdAt: serverTimestamp()
-            });
-
-            alert("Winners generated and reported.");
-          });
-
-        /* Reset draw */
-        document
-          .getElementById("resetBtn")
-          .addEventListener("click", async () => {
-            if (
-              !confirm(
-                "Reset current draw? This clears the draw state but keeps reports."
-              )
-            )
-              return;
-            try {
-              await deleteDoc(stateDocRef);
-              alert("Current draw reset.");
-            } catch (err) {
-              console.error(err);
-              alert("Reset failed.");
-            }
-          });
+      await addDoc(collection(db, 'reports'), {
+        drawId: state.drawId,
+        showTime: document.getElementById('showTime').value,
+        audience: state.audience,
+        keychains: state.keychains,
+        tshirts: state.tshirts,
+        winners,
+        createdAt: serverTimestamp()
       });
-    </script>
-  </body>
+
+      alert("Winners generated and reported.");
+    });
+
+    /* Reset draw */
+    document.getElementById("resetBtn").addEventListener("click", async () => {
+      if (!confirm("Reset current draw? This clears the draw state but keeps reports.")) return;
+      try {
+        await deleteDoc(stateDocRef);
+        alert("Current draw reset.");
+      } catch (err) {
+        console.error(err);
+        alert("Reset failed.");
+      }
+    });
+  });
+</script>
+
+</body>
 </html>
