@@ -40,22 +40,17 @@
 
     <div id="message" class="container"></div>
 
-    <!-- Shared Firebase init -->
     <script type="module" src="firebase-init.js"></script>
     <script type="module">
       import { db } from './firebase-init.js';
       import { doc, getDoc, onSnapshot, collection, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
-      if (!db) {
-        document.getElementById('message').textContent = 'Firebase not initialized.';
-      }
+      const stateDocRef = doc(db, 'state', 'draw');
+      let localCountdownInterval;
 
       function formatSecondsLeft(msEnd) {
         return Math.max(0, Math.floor((msEnd - Date.now()) / 1000));
       }
-
-      const stateDocRef = doc(db, 'state', 'draw');
-      let localCountdownInterval;
 
       function startLocalCountdown(seconds) {
         clearInterval(localCountdownInterval);
@@ -74,8 +69,6 @@
       function showForm() {
         document.getElementById('welcomeScreen').style.display = 'none';
         document.getElementById('entryForm').style.display = 'block';
-        document.getElementById('message').textContent = '';
-        document.getElementById('submitMsg').textContent = '';
       }
 
       function hideForm() {
@@ -88,7 +81,6 @@
         document.getElementById('message').innerHTML = '';
       }
 
-      // Realtime listener for draw state
       onSnapshot(stateDocRef, (snap) => {
         const data = snap.exists() ? snap.data() : null;
 
@@ -112,7 +104,6 @@
           return;
         }
 
-        // Draw running
         const endTime = data.startTime + data.duration * 1000;
         const left = formatSecondsLeft(endTime);
         showForm();
@@ -120,7 +111,6 @@
         document.getElementById('bgAudio').play().catch(err => console.log('Autoplay blocked:', err));
       });
 
-      // Submit entry
       document.getElementById('drawForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const name = document.getElementById('name').value.trim();
@@ -128,15 +118,11 @@
         if (!name || !seat) return;
 
         const stateSnap = await getDoc(stateDocRef);
-        if (!stateSnap.exists()) {
-          document.getElementById('submitMsg').textContent = 'No active draw.';
-          return;
-        }
+        if (!stateSnap.exists()) return;
+
         const state = stateSnap.data();
-        if (state.state !== 'running') {
-          document.getElementById('submitMsg').textContent = 'Draw not running.';
-          return;
-        }
+        if (state.state !== 'running') return;
+
         try {
           await addDoc(collection(db, 'entries'), {
             drawId: state.drawId,
@@ -152,7 +138,6 @@
         }
       });
 
-      // Show winners (Name + Seat only)
       function showWinners(data) {
         document.getElementById('welcomeScreen').style.display = 'none';
         if (!data.winners || !data.winners.length) {
@@ -175,8 +160,4 @@
       }
     </script>
 
-    <!-- Audio files -->
-    <audio id="bgAudio" src="bg.mp3" preload="auto" loop></audio>
-    <audio id="winnerAudio" src="winner.mp3" preload="auto"></audio>
-  </body>
-</html>
+    <audio id="bgAudio" src="bg.mp

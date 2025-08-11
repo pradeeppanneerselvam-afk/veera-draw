@@ -2,7 +2,7 @@
 /* General */
 body {
   font-family: 'Segoe UI', sans-serif;
-  background: #ffffff; /* plain white background */
+  background: #ffffff;
   color: #333;
   margin: 0;
   padding: 0;
@@ -202,21 +202,24 @@ button:hover {
 @media (max-width: 500px) and (orientation: portrait) {
   .welcome-container {
     max-width: 95%;
-    padding: 15px;
+    padding: 20px 15px;
   }
   .welcome-container h1 {
-    font-size: 1.4em;
+    font-size: 1.6em;
   }
   .welcome-container p {
-    font-size: 0.95em;
+    font-size: 1em;
+    margin-bottom: 15px;
   }
   .welcome-buttons {
     flex-direction: column;
-    gap: 12px;
+    gap: 15px;
+    margin-top: 20px;
   }
   .welcome-buttons a {
     width: 100%;
-    font-size: 0.9em;
-    padding: 10px;
+    font-size: 1.1em;
+    padding: 14px;
+    border-radius: 10px;
   }
 }
