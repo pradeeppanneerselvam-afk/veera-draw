@@ -134,6 +134,7 @@
         drawId,
         state: "running",
         startTime: Date.now(),
+        showTime: document.getElementById("showTime").value, // ✅ Added so index.html sees it
         duration: parseInt(document.getElementById("duration").value, 10),
         audience: parseInt(document.getElementById("audience").value, 10),
         keychains: parseInt(document.getElementById("keychains").value, 10),
