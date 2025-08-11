@@ -29,18 +29,62 @@
 <h3 id="luckyDrawHeading" style="display:none; text-align:center; color:#5e1d7d;">Lucky Draw</h3>
 <div id="luckyDrawContent" style="display:none;">
   <!-- Your lucky draw content here -->
+  <p style="text-align:center;">Draw in progress...</p>
 </div>
 
-<script>
-  // Example: Show Lucky Draw when ready
+<audio id="bgMusic" src="bg.mp3" loop></audio>
+<audio id="winnerMusic" src="winner.mp3"></audio>
+
+<!-- Firebase -->
+<script type="module" src="firebase-init.js"></script>
+<script type="module">
+  import { db } from './firebase-init.js';
+  import { doc, onSnapshot } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+  const stateDocRef = doc(db, 'state', 'draw');
+  const bgMusic = document.getElementById("bgMusic");
+  const winnerMusic = document.getElementById("winnerMusic");
+
+  onSnapshot(stateDocRef, (snap) => {
+    if (!snap.exists()) return;
+
+    const data = snap.data();
+    console.log("Draw State:", data.state);
+
+    if (data.state === "running") {
+      startLuckyDraw();
+      playBgMusic();
+    }
+    else if (data.state === "finished") {
+      stopBgMusic();
+      playWinnerMusic();
+    }
+    else {
+      // Default state - welcome screen
+      document.getElementById("welcomeScreen").style.display = "block";
+      document.getElementById("luckyDrawHeading").style.display = "none";
+      document.getElementById("luckyDrawContent").style.display = "none";
+    }
+  });
+
   function startLuckyDraw() {
     document.getElementById("luckyDrawHeading").style.display = "block";
     document.getElementById("luckyDrawContent").style.display = "block";
     document.getElementById("welcomeScreen").style.display = "none";
   }
 
-  // For testing, uncomment to auto-start after 5s
-  // setTimeout(startLuckyDraw, 5000);
+  function playBgMusic() {
+    bgMusic.play().catch(err => console.warn("Autoplay blocked:", err));
+  }
+
+  function stopBgMusic() {
+    bgMusic.pause();
+    bgMusic.currentTime = 0;
+  }
+
+  function playWinnerMusic() {
+    winnerMusic.play().catch(err => console.warn("Autoplay blocked:", err));
+  }
 </script>
 
 </body>
