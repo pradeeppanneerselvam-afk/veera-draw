@@ -49,7 +49,6 @@
         document.getElementById('message').textContent = 'Firebase not initialized.';
       }
 
-      // Utilities
       function formatSecondsLeft(msEnd) {
         return Math.max(0, Math.floor((msEnd - Date.now()) / 1000));
       }
@@ -101,7 +100,6 @@
         const left = formatSecondsLeft(endTime);
         showForm();
         startLocalCountdown(left);
-        // Start background music
         document.getElementById('bgAudio').play().catch(err => console.log('Autoplay blocked:', err));
       });
 
@@ -137,27 +135,20 @@
         }
       });
 
-      // Show winners table (grouped)
+      // Show winners (Name + Seat only)
       function showWinners(data) {
         if (!data.winners || !data.winners.length) {
           document.getElementById('message').textContent = 'No winners.';
           return;
         }
-        let html = `<h3>Winners</h3><table class="winner-table"><tr><th>Prize</th><th>Name</th><th>Seat</th></tr>`;
-        let prizeIndex = 1;
-        for (let i = 0; i < (data.keychains || 0); i++) {
-          const w = data.winners[i] || { name: 'Nil', seat: 'Nil' };
-          html += `<tr class="winner-row" id="winner-${prizeIndex}"><td>Keychain #${i + 1}</td><td>${w.name}</td><td>${w.seat}</td></tr>`;
-          prizeIndex++;
-        }
-        for (let i = data.keychains || 0; i < (data.keychains || 0) + (data.tshirts || 0); i++) {
-          const w = data.winners[i] || { name: 'Nil', seat: 'Nil' };
-          html += `<tr class="winner-row" id="winner-${prizeIndex}"><td>T-Shirt #${i - (data.keychains || 0) + 1}</td><td>${w.name}</td><td>${w.seat}</td></tr>`;
-          prizeIndex++;
-        }
+        let html = `<h3>Winners</h3><table class="winner-table"><tr><th>Name</th><th>Seat</th></tr>`;
+        data.winners.forEach((w, i) => {
+          const winnerData = w || { name: 'Nil', seat: 'Nil' };
+          html += `<tr class="winner-row" id="winner-${i+1}"><td>${winnerData.name}</td><td>${winnerData.seat}</td></tr>`;
+        });
         html += `</table>`;
         document.getElementById('message').innerHTML = html;
-        for (let i = 0; i < prizeIndex - 1; i++) {
+        for (let i = 0; i < data.winners.length; i++) {
           setTimeout(() => {
             const el = document.getElementById(`winner-${i + 1}`);
             if (el) el.classList.add('show');
