@@ -1,71 +1,84 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Veera Cinemas Lucky Draw</title>
-  <link rel="stylesheet" href="style.css" />
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f7f7f7;
-      margin: 0;
-      padding: 0;
-      text-align: center;
-    }
-    header {
-      background-color: #5e1d7d;
-      padding: 10px;
-    }
-    header img {
-      max-width: 150px;
-    }
-    .welcome-container, .draw-container, .winner-container {
-      max-width: 500px;
-      margin: 20px auto;
-      background: white;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
-    h1, h3 {
-      color: #5e1d7d;
-    }
-    .welcome-buttons a {
-      display: block;
-      background-color: #28a745;
-      color: white;
-      padding: 12px;
-      margin: 10px 0;
-      text-decoration: none;
-      border-radius: 8px;
-      font-weight: bold;
-      font-size: 18px;
-    }
-    .btn-insta { background-color: #E1306C; }
-    input {
-      width: 90%;
-      padding: 10px;
-      margin: 8px 0;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 16px;
-    }
-    button {
-      padding: 12px 20px;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 18px;
-      cursor: pointer;
-    }
-    .winner-name {
-      font-size: 20px;
-      margin: 5px 0;
-      color: #333;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Veera Cinemas Lucky Draw</title>
+<link rel="stylesheet" href="style.css" />
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f7f7f7;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+  }
+  header {
+    background-color: #5e1d7d;
+    padding: 10px;
+  }
+  header img {
+    max-width: 150px;
+  }
+  .card {
+    max-width: 500px;
+    background: white;
+    margin: 20px auto;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  }
+  input {
+    width: 90%;
+    padding: 10px;
+    margin-top: 8px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 16px;
+  }
+  button {
+    margin-top: 15px;
+    padding: 12px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
+    width: 95%;
+  }
+  .btn-whatsapp {
+    display: block;
+    background: #25D366;
+    padding: 12px;
+    margin-top: 12px;
+    border-radius: 8px;
+    color: white;
+    font-weight: bold;
+    text-decoration: none;
+    font-size: 18px;
+  }
+  .btn-insta {
+    display: block;
+    background: #E4405F;
+    padding: 12px;
+    margin-top: 12px;
+    border-radius: 8px;
+    color: white;
+    font-weight: bold;
+    text-decoration: none;
+    font-size: 18px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+  }
+  th, td {
+    border: 1px solid #ccc;
+    padding: 8px;
+  }
+</style>
 </head>
 <body>
 
@@ -73,136 +86,134 @@
   <img src="logo.png" alt="Veera Cinemas Logo">
 </header>
 
-<!-- Welcome Section -->
-<div class="welcome-container" id="welcomeScreen">
+<!-- Welcome Screen -->
+<div id="welcomeScreen" class="card">
   <h1>Welcome to Coolie!</h1>
   <p>🎉 Veera Cinemas celebrates with an exciting Lucky Draw! Join now for a chance to win amazing prizes.</p>
-
-  <div class="welcome-buttons">
-    <a href="https://chat.whatsapp.com/FjKFb5hAOuBDs4HEpenxnB?mode=ac_t" target="_blank">📲 Join WhatsApp Group</a>
-    <a href="https://instagram.com/veeracinemas" target="_blank" class="btn-insta">📸 Follow on Instagram</a>
-  </div>
-
-  <p class="welcome-note">Follow us to participate in the Lucky Draw and grab your chance to win exclusive goodies!</p>
+  <a href="https://chat.whatsapp.com/FjKFb5hAOuBDs4HEpenxnB?mode=ac_t" target="_blank" class="btn-whatsapp">📲 Join WhatsApp Group</a>
+  <a href="https://www.instagram.com/veeracinemas?igsh=aGcxYndmdGs4MTRy" target="_blank" class="btn-insta">📸 Follow on Instagram</a>
+  <p>Follow us to participate in the Lucky Draw and grab your chance to win exclusive goodies!</p>
 </div>
 
-<!-- Draw Section -->
-<div class="draw-container" id="drawScreen" style="display:none;">
-  <h3>🎟 Lucky Draw Entry</h3>
-  <p id="timer">Time left: 0s</p>
-  <input type="text" id="name" placeholder="Your Name" required />
-  <input type="text" id="seat" placeholder="Seat Number" required />
+<!-- Entry Form -->
+<div id="entryForm" class="card" style="display:none;">
+  <h2>Enter the Lucky Draw</h2>
+  <input type="text" id="nameInput" placeholder="Your Name" />
+  <input type="text" id="seatInput" placeholder="Seat Number" />
   <button id="submitEntry">Submit Entry</button>
+  <h3 id="timerDisplay"></h3>
 </div>
 
 <!-- Winners Section -->
-<div class="winner-container" id="winnerScreen" style="display:none;">
-  <h3>🏆 Winners</h3>
-  <div id="winnerList"></div>
+<div id="winnersSection" class="card" style="display:none;">
+  <h2>Winners</h2>
+  <table id="winnersTable">
+    <tr><th>Name</th><th>Seat</th></tr>
+  </table>
 </div>
 
-<audio id="bgMusic" src="bg.mp3" loop></audio>
-<audio id="winnerMusic" src="winner.mp3"></audio>
+<audio id="bgMusic" src="bg.mp3" preload="auto" loop></audio>
+<audio id="winnerMusic" src="winner.mp3" preload="auto"></audio>
 
 <script type="module">
-  import { db } from './firebase-init.js';
-  import { doc, setDoc, addDoc, collection, onSnapshot, serverTimestamp, query, where, getDocs } 
-    from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { db } from './firebase-init.js';
+import { doc, onSnapshot, addDoc, collection } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
-  const stateDocRef = doc(db, 'state', 'draw');
+const stateDocRef = doc(db, 'state', 'draw');
+let currentDrawId = null;
+const bgMusic = document.getElementById("bgMusic");
+const winnerMusic = document.getElementById("winnerMusic");
 
-  const welcomeScreen = document.getElementById("welcomeScreen");
-  const drawScreen = document.getElementById("drawScreen");
-  const winnerScreen = document.getElementById("winnerScreen");
-  const timerEl = document.getElementById("timer");
-  const bgMusic = document.getElementById("bgMusic");
-  const winnerMusic = document.getElementById("winnerMusic");
+onSnapshot(stateDocRef, (snap) => {
+  const data = snap.exists() ? snap.data() : null;
+  console.log("Draw state changed:", data);
+  
+  if (!data) {
+    showWelcome();
+    stopAllMusic();
+    return;
+  }
+  
+  if (data.state === "running") {
+    currentDrawId = data.drawId;
+    showEntryForm(data);
+    playBgMusic();
+  } 
+  else if (data.state === "finished") {
+    showWinners(data.winners || []);
+    stopBgMusic();
+    winnerMusic.play();
+  }
+});
 
-  // Listen for state changes
-  onSnapshot(stateDocRef, async (snap) => {
-    const data = snap.exists() ? snap.data() : null;
-    if (!data) {
-      welcomeScreen.style.display = "block";
-      drawScreen.style.display = "none";
-      winnerScreen.style.display = "none";
-      return;
-    }
+function showWelcome() {
+  document.getElementById("welcomeScreen").style.display = "block";
+  document.getElementById("entryForm").style.display = "none";
+  document.getElementById("winnersSection").style.display = "none";
+}
 
-    if (data.state === "running") {
-      // Show draw screen
-      welcomeScreen.style.display = "none";
-      drawScreen.style.display = "block";
-      winnerScreen.style.display = "none";
+function showEntryForm(data) {
+  document.getElementById("welcomeScreen").style.display = "none";
+  document.getElementById("entryForm").style.display = "block";
+  document.getElementById("winnersSection").style.display = "none";
+  
+  const endTime = data.startTime + data.duration * 1000;
+  const timerEl = document.getElementById("timerDisplay");
+  const interval = setInterval(() => {
+    const left = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
+    timerEl.textContent = `Time left: ${left}s`;
+    if (left <= 0) clearInterval(interval);
+  }, 1000);
+}
 
-      // Play background music
-      bgMusic.play().catch(err => console.log("Music autoplay blocked:", err));
-
-      // Timer countdown
-      const endTime = data.startTime + data.duration * 1000;
-      const interval = setInterval(() => {
-        const left = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
-        timerEl.textContent = `Time left: ${left}s`;
-        if (left <= 0) clearInterval(interval);
-      }, 1000);
-
-    } else if (data.state === "finished") {
-      // Show winners
-      welcomeScreen.style.display = "none";
-      drawScreen.style.display = "none";
-      winnerScreen.style.display = "block";
-
-      // Stop background music, play winner music
-      bgMusic.pause();
-      bgMusic.currentTime = 0;
-      winnerMusic.play().catch(err => console.log("Winner music autoplay blocked:", err));
-
-      // Display winners
-      const winnerListEl = document.getElementById("winnerList");
-      winnerListEl.innerHTML = "";
-      (data.winners || []).forEach(w => {
-        const div = document.createElement("div");
-        div.className = "winner-name";
-        div.textContent = `${w.name} - Seat ${w.seat}`;
-        winnerListEl.appendChild(div);
-      });
-    }
+function showWinners(winners) {
+  document.getElementById("welcomeScreen").style.display = "none";
+  document.getElementById("entryForm").style.display = "none";
+  document.getElementById("winnersSection").style.display = "block";
+  
+  const table = document.getElementById("winnersTable");
+  table.innerHTML = "<tr><th>Name</th><th>Seat</th></tr>";
+  winners.forEach(w => {
+    table.innerHTML += `<tr><td>${w.name}</td><td>${w.seat}</td></tr>`;
   });
+}
 
-  // Submit entry
-  document.getElementById("submitEntry").addEventListener("click", async () => {
-    const name = document.getElementById("name").value.trim();
-    const seat = document.getElementById("seat").value.trim();
-    if (!name || !seat) {
-      alert("Please enter your name and seat number");
-      return;
-    }
+function playBgMusic() {
+  bgMusic.currentTime = 0;
+  bgMusic.play().catch(err => console.log("Autoplay blocked:", err));
+}
 
-    const snap = await getDocs(query(collection(db, 'state'), where('__name__', '==', 'draw')));
-    let drawId = "";
-    snap.forEach(docSnap => {
-      if (docSnap.exists()) drawId = docSnap.data().drawId;
-    });
+function stopBgMusic() {
+  bgMusic.pause();
+  bgMusic.currentTime = 0;
+}
 
-    if (!drawId) {
-      alert("No active draw to join.");
-      return;
-    }
+function stopAllMusic() {
+  stopBgMusic();
+  winnerMusic.pause();
+  winnerMusic.currentTime = 0;
+}
 
-    try {
-      await addDoc(collection(db, 'entries'), {
-        drawId,
-        name,
-        seat,
-        createdAt: serverTimestamp()
-      });
-      alert("Entry submitted successfully!");
-      document.getElementById("name").value = "";
-      document.getElementById("seat").value = "";
-    } catch (err) {
-      console.error(err);
-      alert("Failed to submit entry.");
-    }
+document.getElementById("submitEntry").addEventListener("click", async () => {
+  const name = document.getElementById("nameInput").value.trim();
+  const seat = document.getElementById("seatInput").value.trim();
+  if (!name || !seat) {
+    alert("Please enter your name and seat.");
+    return;
+  }
+  if (!currentDrawId) {
+    alert("No active draw.");
+    return;
+  }
+  await addDoc(collection(db, 'entries'), {
+    drawId: currentDrawId,
+    name,
+    seat
   });
+  alert("Entry submitted!");
+  document.getElementById("nameInput").value = "";
+  document.getElementById("seatInput").value = "";
+});
 </script>
 
 </body>
