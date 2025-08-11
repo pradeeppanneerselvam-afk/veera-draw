@@ -197,3 +197,26 @@ button:hover {
     width: 100%;
   }
 }
+
+/* Portrait-specific adjustments */
+@media (max-width: 500px) and (orientation: portrait) {
+  .welcome-container {
+    max-width: 95%;
+    padding: 15px;
+  }
+  .welcome-container h1 {
+    font-size: 1.4em;
+  }
+  .welcome-container p {
+    font-size: 0.95em;
+  }
+  .welcome-buttons {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .welcome-buttons a {
+    width: 100%;
+    font-size: 0.9em;
+    padding: 10px;
+  }
+}
