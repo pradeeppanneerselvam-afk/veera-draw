@@ -49,7 +49,6 @@
         document.getElementById('message').textContent = 'Firebase not initialized.';
       }
 
-      
       // Utilities
       function formatSecondsLeft(msEnd) {
         return Math.max(0, Math.floor((msEnd - Date.now()) / 1000));
@@ -86,14 +85,12 @@
       onSnapshot(stateDocRef, (snap) => {
         const data = snap.exists() ? snap.data() : null;
         if (!data || data.state !== 'running') {
-          document.getElementById('bgAudio').pause();
-          document.getElementById('bgAudio').currentTime = 0;
           hideForm();
           document.getElementById('timer').textContent = '';
+          document.getElementById('bgAudio').pause();
+          document.getElementById('bgAudio').currentTime = 0;
           if (data && data.state === 'finished' && data.winners) {
-            document.getElementById('bgAudio').pause();
-            document.getElementById('bgAudio').currentTime = 0;
-            const _winner = document.getElementById('winnerAudio'); if (_winner) { _winner.muted = false; _winner.play().catch(err => console.log('Autoplay blocked:', err)); }
+            document.getElementById('winnerAudio').play().catch(err => console.log('Autoplay blocked:', err));
             showWinners(data);
           } else {
             document.getElementById('message').textContent = 'Draw closed.';
@@ -103,16 +100,14 @@
         const endTime = data.startTime + data.duration * 1000;
         const left = formatSecondsLeft(endTime);
         showForm();
-        document.getElementById('bgAudio').play().catch(err => { console.log('Autoplay blocked:', err);  });
         startLocalCountdown(left);
+        // Start background music
+        document.getElementById('bgAudio').play().catch(err => console.log('Autoplay blocked:', err));
       });
 
       // Submit entry
       document.getElementById('drawForm').addEventListener('submit', async (e) => {
         e.preventDefault();
-        // user interaction - unmute background audio so music can be heard
-        const _bg = document.getElementById('bgAudio');
-        if (_bg) { _bg.muted = false; _bg.play().catch(() => {}); document.getElementById('enableSoundBtn').style.display = 'none'; }
         const name = document.getElementById('name').value.trim();
         const seat = document.getElementById('seat').value.trim();
         if (!name || !seat) return;
@@ -170,7 +165,9 @@
         }
       }
     </script>
+
+    <!-- Audio files -->
     <audio id="bgAudio" src="bg.mp3" preload="auto" loop></audio>
     <audio id="winnerAudio" src="winner.mp3" preload="auto"></audio>
-</body>
+  </body>
 </html>
