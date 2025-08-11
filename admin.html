@@ -1,83 +1,73 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Admin - Veera Draw</title>
-  <link rel="stylesheet" href="style.css" />
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #f7f7f7;
-      margin: 0;
-      padding: 0;
-      text-align: center;
-    }
-    header {
-      background-color: #5e1d7d;
-      padding: 10px;
-    }
-    header img {
-      max-width: 150px;
-    }
-    .container {
-      max-width: 500px;
-      margin: 20px auto;
-      background: white;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
-    label {
-      display: block;
-      text-align: left;
-      margin-top: 10px;
-      font-weight: bold;
-    }
-    input {
-      width: 95%;
-      padding: 10px;
-      margin-top: 4px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 16px;
-    }
-    button {
-      margin-top: 15px;
-      padding: 12px 20px;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 16px;
-      cursor: pointer;
-      width: 100%;
-    }
-    button:nth-child(odd) {
-      background-color: #28a745;
-    }
-    h3 {
-      color: #5e1d7d;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-    }
-    th, td {
-      border: 1px solid #ccc;
-      padding: 8px;
-      text-align: center;
-    }
-  </style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Admin - Veera Draw</title>
+<link rel="stylesheet" href="style.css" />
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f7f7f7;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+  }
+  header img {
+    max-width: 150px;
+    margin-top: 15px;
+  }
+  .card {
+    max-width: 500px;
+    background: white;
+    margin: 20px auto;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    text-align: left;
+  }
+  label {
+    display: block;
+    margin-top: 12px;
+    font-weight: bold;
+  }
+  input {
+    width: 100%;
+    padding: 10px;
+    margin-top: 4px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+  }
+  button {
+    margin-top: 15px;
+    padding: 12px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
+    width: 100%;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+  }
+  th, td {
+    border: 1px solid #ccc;
+    padding: 8px;
+  }
+</style>
 </head>
 <body>
+
 <header>
-  <img src="logo.png" alt="Veera logo" />
+  <img src="logo.png" alt="Veera Cinemas Logo">
 </header>
 
-<div class="container">
-  <h1>Admin Panel</h1>
+<div class="card">
+  <h2>Admin Panel</h2>
 
   <label>Show Date/Time:</label>
   <input type="datetime-local" id="showTime" />
@@ -98,7 +88,6 @@
   <h3 id="adminTimer">Time left: 0s</h3>
   <h3 id="entryCount"></h3>
   <div id="winnerSection"></div>
-
   <button id="genBtn">Generate Winners</button>
   <button id="resetBtn">Reset Draw</button>
   <button onclick="window.location.href='reports.html'">View Reports</button>
@@ -110,10 +99,11 @@ import { doc, setDoc, getDoc, onSnapshot, collection, query, where, getDocs, add
 
 const stateDocRef = doc(db, 'state', 'draw');
 
-// Start Draw
+/* Start draw */
 document.getElementById("startBtn").addEventListener("click", async () => {
   if (!confirm("Start a new draw? This will clear any current entries.")) return;
-  const drawId = `${Date.now()}-${Math.floor(Math.random()*1000)}`;
+
+  const drawId = Date.now().toString();
   const state = {
     drawId,
     state: "running",
@@ -123,11 +113,16 @@ document.getElementById("startBtn").addEventListener("click", async () => {
     keychains: parseInt(document.getElementById("keychains").value, 10),
     tshirts: parseInt(document.getElementById("tshirts").value, 10),
   };
-  await setDoc(stateDocRef, state);
-  alert("Draw started successfully!");
+  try {
+    await setDoc(stateDocRef, state);
+    alert("Draw started successfully!");
+  } catch (err) {
+    console.error(err);
+    alert("Failed to start draw.");
+  }
 });
 
-// Observe state for timer and entries
+/* Observe state in realtime to update timer and entry count */
 let timerInterval;
 onSnapshot(stateDocRef, async (snap) => {
   const data = snap.exists() ? snap.data() : null;
@@ -137,6 +132,7 @@ onSnapshot(stateDocRef, async (snap) => {
     document.getElementById("winnerSection").innerHTML = "";
     return;
   }
+
   if (data.state === "running") {
     const endTime = data.startTime + data.duration * 1000;
     if (timerInterval) clearInterval(timerInterval);
@@ -160,6 +156,7 @@ onSnapshot(stateDocRef, async (snap) => {
   }
 });
 
+/* show winners table */
 function showWinnersTable(state) {
   if (!state.winners || !state.winners.length) {
     document.getElementById("winnerSection").innerHTML = "";
@@ -167,19 +164,31 @@ function showWinnersTable(state) {
   }
   let tableHTML = `<h3>Winners</h3>
   <table>
-    <tr><th>Name</th><th>Seat</th></tr>`;
-  state.winners.forEach(w => {
-    tableHTML += `<tr><td>${w.name}</td><td>${w.seat}</td></tr>`;
-  });
+    <tr><th>Prize</th><th>Name</th><th>Seat</th></tr>`;
+  let prizeIndex = 1;
+  for (let i = 0; i < (state.keychains || 0); i++) {
+    const w = state.winners[i] || { name: "Nil", seat: "Nil" };
+    tableHTML += `<tr><td>Keychain #${i + 1}</td><td>${w.name}</td><td>${w.seat}</td></tr>`;
+    prizeIndex++;
+  }
+  for (let i = state.keychains || 0; i < (state.keychains || 0) + (state.tshirts || 0); i++) {
+    const w = state.winners[i] || { name: "Nil", seat: "Nil" };
+    tableHTML += `<tr><td>T-Shirt #${i - (state.keychains || 0) + 1}</td><td>${w.name}</td><td>${w.seat}</td></tr>`;
+    prizeIndex++;
+  }
   tableHTML += `</table>`;
   document.getElementById("winnerSection").innerHTML = tableHTML;
 }
 
-// Generate Winners
+/* Generate winners */
 document.getElementById("genBtn").addEventListener("click", async () => {
   if (!confirm("Generate winners now? This will end the draw.")) return;
+
   const stateSnap = await getDoc(stateDocRef);
-  if (!stateSnap.exists()) { alert("No active draw."); return; }
+  if (!stateSnap.exists()) {
+    alert("No active draw.");
+    return;
+  }
   const state = stateSnap.data();
   const entriesQ = query(collection(db, 'entries'), where('drawId', '==', state.drawId));
   const entriesSnap = await getDocs(entriesQ);
@@ -195,10 +204,21 @@ document.getElementById("genBtn").addEventListener("click", async () => {
   };
 
   const keychainWinners = pickRandomUnique(state.keychains || 0);
+  while (keychainWinners.length < (state.keychains || 0))
+    keychainWinners.push({ name: "Nil", seat: "Nil" });
+
   const tshirtWinners = pickRandomUnique(state.tshirts || 0);
+  while (tshirtWinners.length < (state.tshirts || 0))
+    tshirtWinners.push({ name: "Nil", seat: "Nil" });
+
   const winners = [...keychainWinners, ...tshirtWinners];
 
-  const finishedState = { ...state, state: "finished", endTime: Date.now(), winners };
+  const finishedState = {
+    ...state,
+    state: "finished",
+    endTime: Date.now(),
+    winners,
+  };
   await setDoc(stateDocRef, finishedState);
 
   await addDoc(collection(db, 'reports'), {
@@ -214,12 +234,18 @@ document.getElementById("genBtn").addEventListener("click", async () => {
   alert("Winners generated and reported.");
 });
 
-// Reset Draw
+/* Reset draw */
 document.getElementById("resetBtn").addEventListener("click", async () => {
   if (!confirm("Reset current draw? This clears the draw state but keeps reports.")) return;
-  await deleteDoc(stateDocRef);
-  alert("Current draw reset.");
+  try {
+    await deleteDoc(stateDocRef);
+    alert("Current draw reset.");
+  } catch (err) {
+    console.error(err);
+    alert("Reset failed.");
+  }
 });
 </script>
+
 </body>
 </html>
