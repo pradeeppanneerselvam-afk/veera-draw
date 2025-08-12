@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Veera Cinemas Interval</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin:0; background:#fff; }
+    header { text-align:center; padding:10px; }
+    header img { max-height:80px; }
+    .slider { display:flex; overflow-x:auto; scroll-snap-type:x mandatory; gap:10px; padding:10px; }
+    .slider img { max-height:250px; border-radius:10px; scroll-snap-align:center; }
+    .message { text-align:center; color:#666; margin-top:50px; }
+    .review-btn { display:block; margin:20px auto; padding:15px 20px; background:#4285F4; color:white; border:none; border-radius:8px; font-size:18px; text-align:center; text-decoration:none; }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="logo.png" alt="Veera Cinemas Logo">
+  </header>
+
+  <div id="content"></div>
+
+  <a href="https://www.google.com/search?q=Veera+Cinemas&ludocid=XXXXXXXXXXXXXX#lrd=0x0:XXXXXXXXXXXXXX,3" target="_blank" class="review-btn">
+    ⭐ Give a Google Review
+  </a>
+
+  <script>
+    const API_KEY = "AIzaSyDmmJoANHpjoA9eq21JaQnkl4S7wK7ld_w";
+    const FOLDER_ID = "1qVz_bYP2lW6Ao9RFOr7N_F6_KT6cvcXN";
+    const url = `https://www.googleapis.com/drive/v3/files?q='${FOLDER_ID}'+in+parents+and+mimeType+contains+'image/'&key=${API_KEY}&fields=files(id,name,mimeType)`;
+
+    fetch(url)
+      .then(res => res.json())
+      .then(data => {
+        const container = document.getElementById("content");
+        if (!data.files || data.files.length === 0) {
+          container.innerHTML = `<p class="message">No images available</p>`;
+          return;
+        }
+        const slider = document.createElement("div");
+        slider.className = "slider";
+        data.files.forEach(file => {
+          const img = document.createElement("img");
+          img.src = `https://drive.google.com/uc?id=${file.id}`;
+          slider.appendChild(img);
+        });
+        container.appendChild(slider);
+      })
+      .catch(err => {
+        console.error(err);
+        document.getElementById("content").innerHTML = `<p class="message">Error loading images</p>`;
+      });
+  </script>
+</body>
+</html>
