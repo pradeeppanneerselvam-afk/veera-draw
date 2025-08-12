@@ -6,6 +6,7 @@
 <title>Veera Cinemas Lucky Draw</title>
 <link rel="stylesheet" href="style.css" />
 <style>
+  /* Your existing styles unchanged */
   body {
     font-family: Arial, sans-serif;
     background: #f7f7f7;
@@ -151,14 +152,33 @@
 
 <script type="module">
 import { db } from './firebase-init.js';
-import { doc, onSnapshot, addDoc, collection } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+import { doc, onSnapshot, addDoc, collection, getDoc, setDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
 const stateDocRef = doc(db, 'state', 'draw');
 let currentDrawId = null;
 const bgMusic = document.getElementById("bgMusic");
 const winnerMusic = document.getElementById("winnerMusic");
 
-let userTimerInterval;  // Added global timer interval
+let userTimerInterval;
+let serverTimeOffset = 0; // offset between server and client time in ms
+
+async function calculateServerTimeOffset() {
+  try {
+    const offsetDocRef = doc(db, 'serverTime', 'offset');
+    // Write serverTimestamp once to get accurate server time
+    await setDoc(offsetDocRef, { ts: serverTimestamp() });
+    const snap = await getDoc(offsetDocRef);
+    if (snap.exists()) {
+      const serverTs = snap.data().ts.toMillis();
+      const localTs = Date.now();
+      serverTimeOffset = serverTs - localTs;
+      // console.log("Server time offset (ms):", serverTimeOffset);
+    }
+  } catch (e) {
+    console.error("Failed to get server time offset:", e);
+    serverTimeOffset = 0;
+  }
+}
 
 function tryPlayBgMusic() {
   bgMusic.currentTime = 0;
@@ -169,25 +189,29 @@ function tryPlayBgMusic() {
   });
 }
 
-onSnapshot(stateDocRef, (snap) => {
-  const data = snap.exists() ? snap.data() : null;
-  if (!data) {
-    showWelcome();
-    stopAllMusic();
-    return;
-  }
-  
-  if (data.state === "running") {
-    currentDrawId = data.drawId;
-    showEntryForm(data);
-    tryPlayBgMusic();
-  } 
-  else if (data.state === "finished") {
-    showWinners(data.winners || []);
-    stopBgMusic();
-    winnerMusic.play();
-  }
-});
+// Use async IIFE to first calculate offset, then start listening
+(async () => {
+  await calculateServerTimeOffset();
+
+  onSnapshot(stateDocRef, (snap) => {
+    const data = snap.exists() ? snap.data() : null;
+    if (!data) {
+      showWelcome();
+      stopAllMusic();
+      return;
+    }
+
+    if (data.state === "running") {
+      currentDrawId = data.drawId;
+      showEntryForm(data);
+      tryPlayBgMusic();
+    } else if (data.state === "finished") {
+      showWinners(data.winners || []);
+      stopBgMusic();
+      winnerMusic.play();
+    }
+  });
+})();
 
 function showWelcome() {
   document.getElementById("welcomeScreen").style.display = "block";
@@ -214,7 +238,8 @@ function showEntryForm(data) {
   }
 
   const endTime = startTimeMs + data.duration * 1000;
-  let secondsLeft = Math.floor((endTime - Date.now()) / 1000);
+  // Adjust Date.now() by server offset to sync times
+  let secondsLeft = Math.floor((endTime - (Date.now() + serverTimeOffset)) / 1000);
   if (secondsLeft < 0) secondsLeft = 0;
 
   const timerEl = document.getElementById("timerDisplay");
