@@ -1,123 +1,125 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta charset="utf-8">
   <title>Veera Cinemas Lucky Draw</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<header style="text-align:center;">
-  <img src="logo.png" alt="Veera Cinemas Logo" style="max-height:80px;">
+<header>
+  <img src="logo.png" alt="Veera Cinemas Logo">
 </header>
 
-<!-- Welcome Section -->
-<div class="welcome-container" id="welcomeScreen">
-  <h1>Welcome to Coolie!</h1>
-  <p>🎉 Veera Cinemas celebrates with an exciting Lucky Draw! Join now for a chance to win amazing prizes.</p>
+<div class="container card">
+  <h1>Lucky Draw Entry</h1>
+  <label for="name">Your Name:</label>
+  <input type="text" id="name" placeholder="Enter your name">
 
-  <div class="welcome-buttons">
-    <a href="https://chat.whatsapp.com/FjKFb5hAOuBDs4HEpenxnB?mode=ac_t" target="_blank" class="btn-whatsapp">📲 Join WhatsApp Group</a>
-    <a href="https://instagram.com/veeracinemas" target="_blank" class="btn-insta">📸 Follow on Instagram</a>
-  </div>
+  <label for="seat">Seat Number:</label>
+  <input type="text" id="seat" placeholder="Enter your seat number">
 
-  <p class="welcome-note">Follow us to participate in the Lucky Draw and grab your chance to win exclusive goodies!</p>
+  <button id="submitBtn">Submit Entry</button>
+
+  <h3 id="timer"></h3>
+  <div id="winnerSection"></div>
 </div>
 
-<!-- Lucky Draw Section -->
-<h3 id="luckyDrawHeading" style="display:none; text-align:center; color:#5e1d7d;">Lucky Draw</h3>
-<div id="luckyDrawContent" style="display:none;">
-  <div style="text-align:center;">
-    <input type="text" id="nameInput" placeholder="Your Name" />
-    <input type="text" id="seatInput" placeholder="Your Seat No." />
-    <button id="submitEntry">Submit Entry</button>
-  </div>
-  <div id="timer" style="text-align:center; margin-top:10px;"></div>
-</div>
+<audio id="bgMusic" src="bg.mp3" preload="auto" loop></audio>
+<audio id="winnerMusic" src="winner.mp3" preload="auto"></audio>
 
-<!-- Firebase init -->
-<script type="module" src="firebase-init.js"></script>
 <script type="module">
-import { db } from './firebase-init.js';
-import { doc, setDoc, getDoc, onSnapshot, collection, addDoc, serverTimestamp, deleteDoc } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+  import { db } from './firebase-init.js';
+  import { doc, onSnapshot, collection, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
-const stateDocRef = doc(db, 'state', 'draw');
+  const stateDocRef = doc(db, 'state', 'draw');
 
-// Listen to state changes
-onSnapshot(stateDocRef, (snap) => {
-  const data = snap.exists() ? snap.data() : null;
-  if (!data) {
-    document.getElementById("welcomeScreen").style.display = "block";
-    document.getElementById("luckyDrawHeading").style.display = "none";
-    document.getElementById("luckyDrawContent").style.display = "none";
-    return;
+  const bgMusic = document.getElementById('bgMusic');
+  const winnerMusic = document.getElementById('winnerMusic');
+
+  function playBgMusic() {
+    bgMusic.play().catch(err => console.warn('Autoplay blocked:', err));
   }
 
-  // Interval Mode Redirect
-  if (data.state === "interval") {
-    window.location.href = "interval.html";
-    return;
+  function playWinnerMusic() {
+    winnerMusic.play().catch(err => console.warn('Autoplay blocked:', err));
   }
 
-  if (data.state === "running") {
-    document.getElementById("welcomeScreen").style.display = "none";
-    document.getElementById("luckyDrawHeading").style.display = "block";
-    document.getElementById("luckyDrawContent").style.display = "block";
-
-    const endTime = data.startTime + data.duration * 1000;
-    const timerEl = document.getElementById("timer");
-    const timerInterval = setInterval(() => {
-      const left = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
-      timerEl.textContent = `Time left: ${left}s`;
-      if (left <= 0) {
-        clearInterval(timerInterval);
-        timerEl.textContent = "Draw closed";
-      }
-    }, 1000);
-
-    // Play background music
-    const bgAudio = new Audio("bg.mp3");
-    bgAudio.loop = true;
-    bgAudio.play().catch(err => console.warn("Autoplay blocked:", err));
-
-  } else if (data.state === "finished") {
-    document.getElementById("welcomeScreen").style.display = "none";
-    document.getElementById("luckyDrawHeading").style.display = "block";
-    document.getElementById("luckyDrawContent").style.display = "none";
-
-    // Play winner sound
-    const winAudio = new Audio("winner.mp3");
-    winAudio.play().catch(err => console.warn("Autoplay blocked:", err));
-
-    document.getElementById("luckyDrawHeading").textContent = "Draw Finished";
-  }
-});
-
-// Handle submit entry
-document.getElementById("submitEntry").addEventListener("click", async () => {
-  const name = document.getElementById("nameInput").value.trim();
-  const seat = document.getElementById("seatInput").value.trim();
-  if (!name || !seat) {
-    alert("Please enter both name and seat number");
-    return;
-  }
-  const stateSnap = await getDoc(stateDocRef);
-  if (!stateSnap.exists()) return alert("No draw running");
-  const state = stateSnap.data();
-  if (state.state !== "running") return alert("Draw is not running");
-
-  await addDoc(collection(db, "entries"), {
-    drawId: state.drawId,
-    name,
-    seat,
-    createdAt: serverTimestamp()
+  document.getElementById('submitBtn').addEventListener('click', async () => {
+    const name = document.getElementById('name').value.trim();
+    const seat = document.getElementById('seat').value.trim();
+    if (!name || !seat) {
+      alert('Please enter your name and seat number.');
+      return;
+    }
+    try {
+      await addDoc(collection(db, 'entries'), {
+        name,
+        seat,
+        drawId: currentDrawId,
+        createdAt: serverTimestamp()
+      });
+      alert('✅ Entry submitted successfully!');
+      document.getElementById('name').value = '';
+      document.getElementById('seat').value = '';
+    } catch (err) {
+      console.error(err);
+      alert('Failed to submit entry.');
+    }
   });
 
-  alert("✅ Entry submitted successfully!");
-  document.getElementById("nameInput").value = "";
-  document.getElementById("seatInput").value = "";
-});
+  let currentDrawId = null;
+  let timerInterval;
+
+  onSnapshot(stateDocRef, (snap) => {
+    const data = snap.exists() ? snap.data() : null;
+    if (!data) {
+      document.getElementById('timer').textContent = '';
+      document.getElementById('winnerSection').innerHTML = '';
+      return;
+    }
+
+    // NEW — Redirect if Interval Block
+    if (data.state === 'interval') {
+      window.location.href = 'interval.html';
+      return;
+    }
+
+    if (data.state === 'running') {
+      currentDrawId = data.drawId;
+      playBgMusic();
+      const endTime = data.startTime + data.duration * 1000;
+      if (timerInterval) clearInterval(timerInterval);
+      timerInterval = setInterval(() => {
+        const left = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
+        document.getElementById('timer').textContent = `Time left: ${left}s`;
+        if (left <= 0) {
+          clearInterval(timerInterval);
+          document.getElementById('timer').textContent = 'Draw closed. Winners will be announced shortly...';
+        }
+      }, 1000);
+      document.getElementById('winnerSection').innerHTML = '';
+    } else if (data.state === 'finished') {
+      playWinnerMusic();
+      document.getElementById('timer').textContent = 'Draw closed';
+      showWinnersTable(data.winners || []);
+    }
+  });
+
+  function showWinnersTable(winners) {
+    if (!winners.length) {
+      document.getElementById('winnerSection').innerHTML = '<p>No winners.</p>';
+      return;
+    }
+    let html = `<h3>Winners</h3><table class="winner-table"><tr><th>Name</th><th>Seat</th></tr>`;
+    winners.forEach((w, i) => {
+      html += `<tr class="winner-row"><td>${w.name}</td><td>${w.seat}</td></tr>`;
+    });
+    html += `</table>`;
+    document.getElementById('winnerSection').innerHTML = html;
+  }
 </script>
+
 </body>
 </html>
