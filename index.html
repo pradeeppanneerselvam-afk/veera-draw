@@ -158,6 +158,8 @@ let currentDrawId = null;
 const bgMusic = document.getElementById("bgMusic");
 const winnerMusic = document.getElementById("winnerMusic");
 
+let userTimerInterval;  // Added global timer interval
+
 function tryPlayBgMusic() {
   bgMusic.currentTime = 0;
   bgMusic.play().catch(() => {
@@ -192,6 +194,7 @@ function showWelcome() {
   document.getElementById("entryForm").style.display = "none";
   document.getElementById("drawClosedMsg").style.display = "none";
   document.getElementById("winnersSection").style.display = "none";
+  if (userTimerInterval) clearInterval(userTimerInterval);
 }
 
 function showEntryForm(data) {
@@ -199,22 +202,39 @@ function showEntryForm(data) {
   document.getElementById("entryForm").style.display = "block";
   document.getElementById("drawClosedMsg").style.display = "none";
   document.getElementById("winnersSection").style.display = "none";
-  
-  const endTime = data.startTime + data.duration * 1000;
+
+  if (userTimerInterval) clearInterval(userTimerInterval);
+
+  // Convert startTime to milliseconds if needed
+  let startTimeMs = data.startTime;
+  if (data.startTime && typeof data.startTime.toMillis === 'function') {
+    startTimeMs = data.startTime.toMillis();
+  } else if (typeof data.startTime === 'number' && data.startTime < 1e12) {
+    startTimeMs = data.startTime * 1000;
+  }
+
+  const endTime = startTimeMs + data.duration * 1000;
+  let secondsLeft = Math.floor((endTime - Date.now()) / 1000);
+  if (secondsLeft < 0) secondsLeft = 0;
+
   const timerEl = document.getElementById("timerDisplay");
-  const interval = setInterval(() => {
-    const left = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
-    timerEl.textContent = `Time left: ${left}s`;
-    if (left <= 0) {
-      clearInterval(interval);
+  timerEl.textContent = `Time left: ${secondsLeft}s`;
+
+  userTimerInterval = setInterval(() => {
+    secondsLeft--;
+    if (secondsLeft <= 0) {
+      clearInterval(userTimerInterval);
       showDrawClosedMsg();
+      return;
     }
+    timerEl.textContent = `Time left: ${secondsLeft}s`;
   }, 1000);
 }
 
 function showDrawClosedMsg() {
   document.getElementById("entryForm").style.display = "none";
   document.getElementById("drawClosedMsg").style.display = "block";
+  if (userTimerInterval) clearInterval(userTimerInterval);
 }
 
 function showWinners(winners) {
