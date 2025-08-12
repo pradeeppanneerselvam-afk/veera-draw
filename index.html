@@ -1,252 +1,271 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <title>Admin - Veera Draw</title>
-    <link rel="stylesheet" href="style.css" />
-  </head>
-  <body>
-    <header>
-      <img src="logo.png" alt="Veera logo" />
-    </header>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Veera Cinemas Lucky Draw</title>
+<link rel="stylesheet" href="style.css" />
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f7f7f7;
+    margin: 0;
+    padding: 0;
+    text-align: center;
+  }
+  header img {
+    max-width: 150px;
+    margin-top: 15px;
+  }
+  .card {
+    max-width: 500px;
+    background: white;
+    margin: 20px auto;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  }
+  input {
+    width: 90%;
+    padding: 10px;
+    margin-top: 8px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    font-size: 16px;
+  }
+  button {
+    margin-top: 15px;
+    padding: 12px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
+    width: 95%;
+  }
+  .btn-whatsapp {
+    display: block;
+    background: #25D366;
+    padding: 12px;
+    margin-top: 12px;
+    border-radius: 8px;
+    color: white;
+    font-weight: bold;
+    text-decoration: none;
+    font-size: 18px;
+  }
+  .btn-insta {
+    display: block;
+    background: #E4405F;
+    padding: 12px;
+    margin-top: 12px;
+    border-radius: 8px;
+    color: white;
+    font-weight: bold;
+    text-decoration: none;
+    font-size: 18px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+  }
+  th, td {
+    border: 1px solid #ccc;
+    padding: 8px;
+  }
+  /* Popup modal */
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 999;
+    left: 0; top: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    justify-content: center; align-items: center;
+  }
+  .modal-content {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+    width: 80%;
+    max-width: 300px;
+  }
+  .modal-content h2 {
+    margin-top: 0;
+    color: green;
+  }
+</style>
+</head>
+<body>
 
-    <div class="container">
-      <h1>Admin Panel</h1>
+<header>
+  <img src="logo.png" alt="Veera Cinemas Logo">
+</header>
 
-      <label>Show Date/Time:</label>
-      <input type="datetime-local" id="showTime" />
+<!-- Welcome Screen -->
+<div id="welcomeScreen" class="card">
+  <h1>Welcome to Coolie!</h1>
+  <p>🎉 Veera Cinemas celebrates with an exciting Lucky Draw! Join now for a chance to win amazing prizes.</p>
+  <a href="https://chat.whatsapp.com/FjKFb5hAOuBDs4HEpenxnB?mode=ac_t" target="_blank" class="btn-whatsapp">📲 Join WhatsApp Group</a>
+  <a href="https://www.instagram.com/veeracinemas?igsh=aGcxYndmdGs4MTRy" target="_blank" class="btn-insta">📸 Follow on Instagram</a>
+  <p>Follow us to participate in the Lucky Draw and grab your chance to win exclusive goodies!</p>
+</div>
 
-      <label>Audience Size:</label>
-      <input type="number" id="audience" />
+<!-- Entry Form -->
+<div id="entryForm" class="card" style="display:none;">
+  <h2>Enter the Lucky Draw</h2>
+  <input type="text" id="nameInput" placeholder="Your Name" />
+  <input type="text" id="seatInput" placeholder="Seat Number" />
+  <button id="submitEntry">Submit Entry</button>
+  <h3 id="timerDisplay"></h3>
+</div>
 
-      <label>Keychains:</label>
-      <input type="number" id="keychains" />
+<!-- Draw Closed Message -->
+<div id="drawClosedMsg" class="card" style="display:none;">
+  <h2>Draw closed</h2>
+  <p>Winners will be announced shortly...</p>
+</div>
 
-      <label>T-Shirts:</label>
-      <input type="number" id="tshirts" />
+<!-- Winners Section -->
+<div id="winnersSection" class="card" style="display:none;">
+  <h2>Winners</h2>
+  <table id="winnersTable">
+    <tr><th>Name</th><th>Seat</th></tr>
+  </table>
+</div>
 
-      <label>Duration (sec):</label>
-      <input type="number" id="duration" value="45" />
+<!-- Success Modal -->
+<div id="successModal" class="modal">
+  <div class="modal-content">
+    <h2>✅ Success!</h2>
+    <p>Your entry has been submitted.</p>
+    <button onclick="closeModal()">OK</button>
+  </div>
+</div>
 
-      <button id="startBtn">Start Draw</button>
-      <h3 id="adminTimer">Time left: 0s</h3>
-      <h3 id="entryCount"></h3>
-      <div id="winnerSection"></div>
-      <button id="genBtn">Generate Winners</button>
-      <button id="resetBtn">Reset Draw</button>
-      <button onclick="window.location.href='reports.html'">
-        View Reports
-      </button>
-    </div>
+<audio id="bgMusic" src="bg.mp3" preload="auto" loop></audio>
+<audio id="winnerMusic" src="winner.mp3" preload="auto"></audio>
 
-    <!-- Shared firebase init -->
-    <script type="module" src="firebase-init.js"></script>
-    <script type="module">
-      import { db } from './firebase-init.js';
-      import { doc, setDoc, getDoc, onSnapshot, collection, query, where, getDocs, addDoc, deleteDoc, serverTimestamp, writeBatch } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+<script type="module">
+import { db } from './firebase-init.js';
+import { doc, onSnapshot, addDoc, collection } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
-      document.addEventListener('DOMContentLoaded', () => {
-        if (!db) alert('Firebase not initialized. Check firebase-init.js');
+const stateDocRef = doc(db, 'state', 'draw');
+let currentDrawId = null;
+const bgMusic = document.getElementById("bgMusic");
+const winnerMusic = document.getElementById("winnerMusic");
 
-        const stateDocRef = doc(db, 'state', 'draw');
+function tryPlayBgMusic() {
+  bgMusic.currentTime = 0;
+  bgMusic.play().catch(() => {
+    document.body.addEventListener("click", () => {
+      bgMusic.play();
+    }, { once: true });
+  });
+}
 
-        function now() {
-          return Date.now();
-        }
+onSnapshot(stateDocRef, (snap) => {
+  const data = snap.exists() ? snap.data() : null;
+  if (!data) {
+    showWelcome();
+    stopAllMusic();
+    return;
+  }
+  
+  if (data.state === "running") {
+    currentDrawId = data.drawId;
+    showEntryForm(data);
+    tryPlayBgMusic();
+  } 
+  else if (data.state === "finished") {
+    showWinners(data.winners || []);
+    stopBgMusic();
+    winnerMusic.play();
+  }
+});
 
-        /* Start draw */
-        document
-          .getElementById("startBtn")
-          .addEventListener("click", async () => {
-            if (
-              !confirm("Start a new draw? This will clear any current entries.")
-            )
-              return;
+function showWelcome() {
+  document.getElementById("welcomeScreen").style.display = "block";
+  document.getElementById("entryForm").style.display = "none";
+  document.getElementById("drawClosedMsg").style.display = "none";
+  document.getElementById("winnersSection").style.display = "none";
+}
 
-            const drawId = Date.now().toString();
-            const state = {
-              drawId,
-              state: "running",
-              startTime: Date.now(),
-              duration: parseInt(document.getElementById("duration").value, 10),
-              audience: parseInt(document.getElementById("audience").value, 10),
-              keychains: parseInt(
-                document.getElementById("keychains").value,
-                10
-              ),
-              tshirts: parseInt(document.getElementById("tshirts").value, 10),
-            };
-            try {
-              await setDoc(stateDocRef, state);
-              alert("Draw started successfully!");
-            } catch (err) {
-              console.error(err);
-              alert("Failed to start draw.");
-            }
-          });
+function showEntryForm(data) {
+  document.getElementById("welcomeScreen").style.display = "none";
+  document.getElementById("entryForm").style.display = "block";
+  document.getElementById("drawClosedMsg").style.display = "none";
+  document.getElementById("winnersSection").style.display = "none";
+  
+  const endTime = data.startTime + data.duration * 1000;
+  const timerEl = document.getElementById("timerDisplay");
+  const interval = setInterval(() => {
+    const left = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
+    timerEl.textContent = `Time left: ${left}s`;
+    if (left <= 0) {
+      clearInterval(interval);
+      showDrawClosedMsg();
+    }
+  }, 1000);
+}
 
-        /* Observe state in realtime to update timer and entry count */
-        let timerInterval;
-        onSnapshot(stateDocRef, async (snap) => {
-          const data = snap.exists() ? snap.data() : null;
-          if (!data) {
-            document.getElementById("adminTimer").textContent = "";
-            document.getElementById("entryCount").textContent = "";
-            document.getElementById("winnerSection").innerHTML = "";
-            return;
-          }
+function showDrawClosedMsg() {
+  document.getElementById("entryForm").style.display = "none";
+  document.getElementById("drawClosedMsg").style.display = "block";
+}
 
-          if (data.state === "running") {
-            const endTime = data.startTime + data.duration * 1000;
-            if (timerInterval) clearInterval(timerInterval);
-            timerInterval = setInterval(() => {
-              const left = Math.max(
-                0,
-                Math.floor((endTime - Date.now()) / 1000)
-              );
-              document.getElementById(
-                "adminTimer"
-              ).textContent = `Time left: ${left}s`;
-              if (left <= 0) {
-                clearInterval(timerInterval);
-                document.getElementById("adminTimer").textContent =
-                  "Draw closed";
-              }
-            }, 1000);
-            document.getElementById("winnerSection").innerHTML = "";
-            document.getElementById("entryCount").textContent = "";
-          } else if (data.state === "finished") {
-            document.getElementById("adminTimer").textContent = "Draw closed";
-            const entriesQ = query(collection(db, 'entries'), where('drawId', '==', data.drawId));
-            const entriesSnap = await getDocs(entriesQ);
-            const count = entriesSnap.size;
-            document.getElementById(
-              "entryCount"
-            ).textContent = `Total Entries: ${count}`;
-            showWinnersTable(data);
-          }
-        });
+function showWinners(winners) {
+  document.getElementById("welcomeScreen").style.display = "none";
+  document.getElementById("entryForm").style.display = "none";
+  document.getElementById("drawClosedMsg").style.display = "none";
+  document.getElementById("winnersSection").style.display = "block";
+  
+  const table = document.getElementById("winnersTable");
+  table.innerHTML = "<tr><th>Name</th><th>Seat</th></tr>";
+  winners.forEach(w => {
+    table.innerHTML += `<tr><td>${w.name}</td><td>${w.seat}</td></tr>`;
+  });
+}
 
-        /* show winners grouped table */
-        function showWinnersTable(state) {
-          if (!state.winners || !state.winners.length) {
-            document.getElementById("winnerSection").innerHTML = "";
-            return;
-          }
-          let tableHTML = `<h3>Winners</h3>
-      <table class="winner-table">
-        <tr><th>Prize</th><th>Name</th><th>Seat</th></tr>`;
-          let prizeIndex = 1;
-          for (let i = 0; i < (state.keychains || 0); i++) {
-            const w = state.winners[i] || { name: "Nil", seat: "Nil" };
-            tableHTML += `<tr class="winner-row" id="winner-${prizeIndex}">
-                      <td>Keychain #${i + 1}</td>
-                      <td>${w.name}</td>
-                      <td>${w.seat}</td>
-                    </tr>`;
-            prizeIndex++;
-          }
-          for (
-            let i = state.keychains || 0;
-            i < (state.keychains || 0) + (state.tshirts || 0);
-            i++
-          ) {
-            const w = state.winners[i] || { name: "Nil", seat: "Nil" };
-            tableHTML += `<tr class="winner-row" id="winner-${prizeIndex}">
-                      <td>T-Shirt #${i - (state.keychains || 0) + 1}</td>
-                      <td>${w.name}</td>
-                      <td>${w.seat}</td>
-                    </tr>`;
-            prizeIndex++;
-          }
-          tableHTML += `</table>`;
-          document.getElementById("winnerSection").innerHTML = tableHTML;
+function stopBgMusic() {
+  bgMusic.pause();
+  bgMusic.currentTime = 0;
+}
 
-          // animate rows
-          for (let i = 0; i < (state.winners || []).length; i++) {
-            setTimeout(() => {
-              const el = document.getElementById(`winner-${i + 1}`);
-              if (el) el.classList.add("show");
-            }, i * 800);
-          }
-        }
+function stopAllMusic() {
+  stopBgMusic();
+  winnerMusic.pause();
+  winnerMusic.currentTime = 0;
+}
 
-        /* Generate winners */
-        document
-          .getElementById("genBtn")
-          .addEventListener("click", async () => {
-            if (!confirm("Generate winners now? This will end the draw."))
-              return;
+document.getElementById("submitEntry").addEventListener("click", async () => {
+  const name = document.getElementById("nameInput").value.trim();
+  const seat = document.getElementById("seatInput").value.trim();
+  if (!name || !seat) {
+    alert("Please enter your name and seat.");
+    return;
+  }
+  if (!currentDrawId) {
+    alert("No active draw.");
+    return;
+  }
+  await addDoc(collection(db, 'entries'), {
+    drawId: currentDrawId,
+    name,
+    seat
+  });
+  document.getElementById("nameInput").value = "";
+  document.getElementById("seatInput").value = "";
+  document.getElementById("successModal").style.display = "flex";
+});
 
-            const stateSnap = await getDoc(stateDocRef);
-            if (!stateSnap.exists()) {
-              alert("No active draw.");
-              return;
-            }
-            const state = stateSnap.data();
-            const entriesQ = query(collection(db, 'entries'), where('drawId', '==', state.drawId));
-            const entriesSnap = await getDocs(entriesQ);
-            let pool = entriesSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+window.closeModal = function() {
+  document.getElementById("successModal").style.display = "none";
+};
+</script>
 
-            const pickRandomUnique = (count) => {
-              const res = [];
-              while (pool.length && res.length < count) {
-                const idx = Math.floor(Math.random() * pool.length);
-                res.push(pool.splice(idx, 1)[0]);
-              }
-              return res;
-            };
-
-            const keychainWinners = pickRandomUnique(state.keychains || 0);
-            while (keychainWinners.length < (state.keychains || 0))
-              keychainWinners.push({ name: "Nil", seat: "Nil" });
-
-            const tshirtWinners = pickRandomUnique(state.tshirts || 0);
-            while (tshirtWinners.length < (state.tshirts || 0))
-              tshirtWinners.push({ name: "Nil", seat: "Nil" });
-
-            const winners = [...keychainWinners, ...tshirtWinners];
-
-            const finishedState = {
-              ...state,
-              state: "finished",
-              endTime: Date.now(),
-              winners,
-            };
-            await setDoc(stateDocRef, finishedState);
-
-            await addDoc(collection(db, 'reports'), {
-              drawId: state.drawId,
-              showTime: document.getElementById('showTime').value,
-              audience: state.audience,
-              keychains: state.keychains,
-              tshirts: state.tshirts,
-              winners,
-              createdAt: serverTimestamp()
-            });
-
-            alert("Winners generated and reported.");
-          });
-
-        /* Reset draw */
-        document
-          .getElementById("resetBtn")
-          .addEventListener("click", async () => {
-            if (
-              !confirm(
-                "Reset current draw? This clears the draw state but keeps reports."
-              )
-            )
-              return;
-            try {
-              await deleteDoc(stateDocRef);
-              alert("Current draw reset.");
-            } catch (err) {
-              console.error(err);
-              alert("Reset failed.");
-            }
-          });
-      });
-    </script>
-  </body>
+</body>
 </html>
