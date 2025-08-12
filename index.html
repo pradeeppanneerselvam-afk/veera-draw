@@ -1,271 +1,164 @@
 <!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Veera Cinemas Lucky Draw</title>
-<link rel="stylesheet" href="style.css" />
-<style>
-  body {
-    font-family: Arial, sans-serif;
-    background: #f7f7f7;
-    margin: 0;
-    padding: 0;
-    text-align: center;
-  }
-  header img {
-    max-width: 150px;
-    margin-top: 15px;
-  }
-  .card {
-    max-width: 500px;
-    background: white;
-    margin: 20px auto;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-  }
-  input {
-    width: 90%;
-    padding: 10px;
-    margin-top: 8px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    font-size: 16px;
-  }
-  button {
-    margin-top: 15px;
-    padding: 12px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 16px;
-    cursor: pointer;
-    width: 95%;
-  }
-  .btn-whatsapp {
-    display: block;
-    background: #25D366;
-    padding: 12px;
-    margin-top: 12px;
-    border-radius: 8px;
-    color: white;
-    font-weight: bold;
-    text-decoration: none;
-    font-size: 18px;
-  }
-  .btn-insta {
-    display: block;
-    background: #E4405F;
-    padding: 12px;
-    margin-top: 12px;
-    border-radius: 8px;
-    color: white;
-    font-weight: bold;
-    text-decoration: none;
-    font-size: 18px;
-  }
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 15px;
-  }
-  th, td {
-    border: 1px solid #ccc;
-    padding: 8px;
-  }
-  /* Popup modal */
-  .modal {
-    display: none;
-    position: fixed;
-    z-index: 999;
-    left: 0; top: 0;
-    width: 100%; height: 100%;
-    background: rgba(0,0,0,0.5);
-    justify-content: center; align-items: center;
-  }
-  .modal-content {
-    background: white;
-    padding: 20px;
-    border-radius: 12px;
-    text-align: center;
-    width: 80%;
-    max-width: 300px;
-  }
-  .modal-content h2 {
-    margin-top: 0;
-    color: green;
-  }
-</style>
-</head>
-<body>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Veera Draw Entry</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header>
+      <img src="logo.png" alt="Veera logo" />
+    </header>
+    <h1>Lucky Draw</h1>
 
-<header>
-  <img src="logo.png" alt="Veera Cinemas Logo">
-</header>
+    <div id="timer" class="timer"></div>
 
-<!-- Welcome Screen -->
-<div id="welcomeScreen" class="card">
-  <h1>Welcome to Coolie!</h1>
-  <p>🎉 Veera Cinemas celebrates with an exciting Lucky Draw! Join now for a chance to win amazing prizes.</p>
-  <a href="https://chat.whatsapp.com/FjKFb5hAOuBDs4HEpenxnB?mode=ac_t" target="_blank" class="btn-whatsapp">📲 Join WhatsApp Group</a>
-  <a href="https://www.instagram.com/veeracinemas?igsh=aGcxYndmdGs4MTRy" target="_blank" class="btn-insta">📸 Follow on Instagram</a>
-  <p>Follow us to participate in the Lucky Draw and grab your chance to win exclusive goodies!</p>
-</div>
+    <div id="entryForm" class="container">
+      <form id="drawForm">
+        <input
+          type="text"
+          id="name"
+          placeholder="Your Name"
+          required
+          autocomplete="name"
+        />
+        <input
+          type="text"
+          id="seat"
+          placeholder="Seat Number"
+          required
+          autocomplete="off"
+        />
+        <button type="submit">Submit Entry</button>
+      </form>
+      <div
+        id="submitMsg"
+        style="text-align: center; margin-top: 8px; color: #5e1d7d"
+      ></div>
+    </div>
 
-<!-- Entry Form -->
-<div id="entryForm" class="card" style="display:none;">
-  <h2>Enter the Lucky Draw</h2>
-  <input type="text" id="nameInput" placeholder="Your Name" />
-  <input type="text" id="seatInput" placeholder="Seat Number" />
-  <button id="submitEntry">Submit Entry</button>
-  <h3 id="timerDisplay"></h3>
-</div>
+    <div id="message" class="container"></div>
 
-<!-- Draw Closed Message -->
-<div id="drawClosedMsg" class="card" style="display:none;">
-  <h2>Draw closed</h2>
-  <p>Winners will be announced shortly...</p>
-</div>
+    <!-- Shared Firebase init -->
+    <script type="module" src="firebase-init.js"></script>
+    <script type="module">
+      import { db } from './firebase-init.js';
+      import { doc, getDoc, onSnapshot, collection, addDoc, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
 
-<!-- Winners Section -->
-<div id="winnersSection" class="card" style="display:none;">
-  <h2>Winners</h2>
-  <table id="winnersTable">
-    <tr><th>Name</th><th>Seat</th></tr>
-  </table>
-</div>
+      if (!db) {
+        document.getElementById('message').textContent = 'Firebase not initialized.';
+      }
 
-<!-- Success Modal -->
-<div id="successModal" class="modal">
-  <div class="modal-content">
-    <h2>✅ Success!</h2>
-    <p>Your entry has been submitted.</p>
-    <button onclick="closeModal()">OK</button>
-  </div>
-</div>
+      function formatSecondsLeft(msEnd) {
+        return Math.max(0, Math.floor((msEnd - Date.now()) / 1000));
+      }
 
-<audio id="bgMusic" src="bg.mp3" preload="auto" loop></audio>
-<audio id="winnerMusic" src="winner.mp3" preload="auto"></audio>
+      const stateDocRef = doc(db, 'state', 'draw');
+      let localCountdownInterval;
 
-<script type="module">
-import { db } from './firebase-init.js';
-import { doc, onSnapshot, addDoc, collection } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+      function startLocalCountdown(seconds) {
+        clearInterval(localCountdownInterval);
+        let left = seconds;
+        document.getElementById('timer').textContent = `Time left: ${left}s`;
+        localCountdownInterval = setInterval(() => {
+          left--;
+          document.getElementById('timer').textContent = `Time left: ${Math.max(0,left)}s`;
+          if (left <= 0) {
+            clearInterval(localCountdownInterval);
+            hideForm();
+          }
+        }, 1000);
+      }
 
-const stateDocRef = doc(db, 'state', 'draw');
-let currentDrawId = null;
-const bgMusic = document.getElementById("bgMusic");
-const winnerMusic = document.getElementById("winnerMusic");
+      function showForm() {
+        document.getElementById('entryForm').style.display = 'block';
+        document.getElementById('message').textContent = '';
+        document.getElementById('submitMsg').textContent = '';
+      }
 
-function tryPlayBgMusic() {
-  bgMusic.currentTime = 0;
-  bgMusic.play().catch(() => {
-    document.body.addEventListener("click", () => {
-      bgMusic.play();
-    }, { once: true });
-  });
-}
+      function hideForm() {
+        document.getElementById('entryForm').style.display = 'none';
+      }
 
-onSnapshot(stateDocRef, (snap) => {
-  const data = snap.exists() ? snap.data() : null;
-  if (!data) {
-    showWelcome();
-    stopAllMusic();
-    return;
-  }
-  
-  if (data.state === "running") {
-    currentDrawId = data.drawId;
-    showEntryForm(data);
-    tryPlayBgMusic();
-  } 
-  else if (data.state === "finished") {
-    showWinners(data.winners || []);
-    stopBgMusic();
-    winnerMusic.play();
-  }
-});
+      // Realtime listener for draw state
+      onSnapshot(stateDocRef, (snap) => {
+        const data = snap.exists() ? snap.data() : null;
+        if (!data || data.state !== 'running') {
+          hideForm();
+          document.getElementById('timer').textContent = '';
+          document.getElementById('bgAudio').pause();
+          document.getElementById('bgAudio').currentTime = 0;
+          if (data && data.state === 'finished' && data.winners) {
+            document.getElementById('winnerAudio').play().catch(err => console.log('Autoplay blocked:', err));
+            showWinners(data);
+          } else {
+            document.getElementById('message').textContent = 'Draw closed.';
+          }
+          return;
+        }
+        const endTime = data.startTime + data.duration * 1000;
+        const left = formatSecondsLeft(endTime);
+        showForm();
+        startLocalCountdown(left);
+        document.getElementById('bgAudio').play().catch(err => console.log('Autoplay blocked:', err));
+      });
 
-function showWelcome() {
-  document.getElementById("welcomeScreen").style.display = "block";
-  document.getElementById("entryForm").style.display = "none";
-  document.getElementById("drawClosedMsg").style.display = "none";
-  document.getElementById("winnersSection").style.display = "none";
-}
+      // Submit entry
+      document.getElementById('drawForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const name = document.getElementById('name').value.trim();
+        const seat = document.getElementById('seat').value.trim();
+        if (!name || !seat) return;
 
-function showEntryForm(data) {
-  document.getElementById("welcomeScreen").style.display = "none";
-  document.getElementById("entryForm").style.display = "block";
-  document.getElementById("drawClosedMsg").style.display = "none";
-  document.getElementById("winnersSection").style.display = "none";
-  
-  const endTime = data.startTime + data.duration * 1000;
-  const timerEl = document.getElementById("timerDisplay");
-  const interval = setInterval(() => {
-    const left = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
-    timerEl.textContent = `Time left: ${left}s`;
-    if (left <= 0) {
-      clearInterval(interval);
-      showDrawClosedMsg();
-    }
-  }, 1000);
-}
+        const stateSnap = await getDoc(stateDocRef);
+        if (!stateSnap.exists()) {
+          document.getElementById('submitMsg').textContent = 'No active draw.';
+          return;
+        }
+        const state = stateSnap.data();
+        if (state.state !== 'running') {
+          document.getElementById('submitMsg').textContent = 'Draw not running.';
+          return;
+        }
+        try {
+          await addDoc(collection(db, 'entries'), {
+            drawId: state.drawId,
+            name,
+            seat,
+            timestamp: serverTimestamp()
+          });
+          document.getElementById('submitMsg').textContent = 'Entry submitted — good luck!';
+          document.getElementById('drawForm').reset();
+        } catch (err) {
+          console.error(err);
+          document.getElementById('submitMsg').textContent = 'Submission failed — try again.';
+        }
+      });
 
-function showDrawClosedMsg() {
-  document.getElementById("entryForm").style.display = "none";
-  document.getElementById("drawClosedMsg").style.display = "block";
-}
+      // Show winners (Name + Seat only)
+      function showWinners(data) {
+        if (!data.winners || !data.winners.length) {
+          document.getElementById('message').textContent = 'No winners.';
+          return;
+        }
+        let html = `<h3>Winners</h3><table class="winner-table"><tr><th>Name</th><th>Seat</th></tr>`;
+        data.winners.forEach((w, i) => {
+          const winnerData = w || { name: 'Nil', seat: 'Nil' };
+          html += `<tr class="winner-row" id="winner-${i+1}"><td>${winnerData.name}</td><td>${winnerData.seat}</td></tr>`;
+        });
+        html += `</table>`;
+        document.getElementById('message').innerHTML = html;
+        for (let i = 0; i < data.winners.length; i++) {
+          setTimeout(() => {
+            const el = document.getElementById(`winner-${i + 1}`);
+            if (el) el.classList.add('show');
+          }, i * 800);
+        }
+      }
+    </script>
 
-function showWinners(winners) {
-  document.getElementById("welcomeScreen").style.display = "none";
-  document.getElementById("entryForm").style.display = "none";
-  document.getElementById("drawClosedMsg").style.display = "none";
-  document.getElementById("winnersSection").style.display = "block";
-  
-  const table = document.getElementById("winnersTable");
-  table.innerHTML = "<tr><th>Name</th><th>Seat</th></tr>";
-  winners.forEach(w => {
-    table.innerHTML += `<tr><td>${w.name}</td><td>${w.seat}</td></tr>`;
-  });
-}
-
-function stopBgMusic() {
-  bgMusic.pause();
-  bgMusic.currentTime = 0;
-}
-
-function stopAllMusic() {
-  stopBgMusic();
-  winnerMusic.pause();
-  winnerMusic.currentTime = 0;
-}
-
-document.getElementById("submitEntry").addEventListener("click", async () => {
-  const name = document.getElementById("nameInput").value.trim();
-  const seat = document.getElementById("seatInput").value.trim();
-  if (!name || !seat) {
-    alert("Please enter your name and seat.");
-    return;
-  }
-  if (!currentDrawId) {
-    alert("No active draw.");
-    return;
-  }
-  await addDoc(collection(db, 'entries'), {
-    drawId: currentDrawId,
-    name,
-    seat
-  });
-  document.getElementById("nameInput").value = "";
-  document.getElementById("seatInput").value = "";
-  document.getElementById("successModal").style.display = "flex";
-});
-
-window.closeModal = function() {
-  document.getElementById("successModal").style.display = "none";
-};
-</script>
-
-</body>
+    <!-- Audio files -->
+    <audio id="bgAudio" src="bg.mp3" preload="auto" loop></audio>
+    <audio id="winnerAudio" src="winner.mp3" preload="auto"></audio>
+  </body>
 </html>
