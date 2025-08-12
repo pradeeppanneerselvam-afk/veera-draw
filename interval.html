@@ -1,56 +1,115 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Veera Cinemas Interval</title>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Veera Cinemas - Interval</title>
+  <link rel="stylesheet" href="style.css" />
   <style>
-    body { font-family: Arial, sans-serif; margin:0; background:#fff; }
-    header { text-align:center; padding:10px; }
+    body { font-family: Arial, sans-serif; background:#f7f7f7; margin:0; padding:0; color:#333; }
+    header { text-align:center; padding:14px 0; }
     header img { max-height:80px; }
-    .slider { display:flex; overflow-x:auto; scroll-snap-type:x mandatory; gap:10px; padding:10px; }
-    .slider img { max-height:250px; border-radius:10px; scroll-snap-align:center; }
-    .message { text-align:center; color:#666; margin-top:50px; }
-    .review-btn { display:block; margin:20px auto; padding:15px 20px; background:#4285F4; color:white; border:none; border-radius:8px; font-size:18px; text-align:center; text-decoration:none; }
+    .card { max-width:500px; margin:16px auto; background:#fff; padding:16px; border-radius:12px; box-shadow:0 4px 10px rgba(0,0,0,0.08); }
+    .title { text-align:center; color:#5e1d7d; margin:6px 0 12px; }
+    .slider { display:flex; gap:12px; overflow-x:auto; padding:12px; scroll-snap-type:x mandatory; -webkit-overflow-scrolling: touch; }
+    .slide { flex:0 0 auto; scroll-snap-align:center; border-radius:10px; overflow:hidden; width:320px; max-width:86vw; height:200px; display:flex; align-items:center; justify-content:center; background:#eee; }
+    .slide img { width:100%; height:100%; object-fit:cover; display:block; }
+    .message { text-align:center; color:#666; padding:36px 12px; }
+    .review-btn { display:block; margin:18px auto 8px; padding:12px 18px; background:#4285F4; color:#fff; border:none; border-radius:8px; text-decoration:none; text-align:center; font-weight:bold; width:220px; }
+    /* modal */
+    .modal { position:fixed; inset:0; background: rgba(0,0,0,0.8); display:flex; align-items:center; justify-content:center; z-index:1000; visibility:hidden; opacity:0; transition:opacity .2s ease; }
+    .modal.show { visibility:visible; opacity:1; }
+    .modal img { max-width:94vw; max-height:94vh; border-radius:8px; }
   </style>
 </head>
 <body>
-  <header>
-    <img src="logo.png" alt="Veera Cinemas Logo">
-  </header>
+  <header><img src="logo.png" alt="Veera logo"></header>
 
-  <div id="content"></div>
+  <div class="card">
+    <h2 class="title">Celebration Photos</h2>
+    <div id="container">
+      <!-- slider or message will be injected here -->
+      <p class="message">Loading images…</p>
+    </div>
 
-  <a href="https://www.google.com/search?q=Veera+Cinemas&ludocid=XXXXXXXXXXXXXX#lrd=0x0:XXXXXXXXXXXXXX,3" target="_blank" class="review-btn">
-    ⭐ Give a Google Review
-  </a>
+    <a class="review-btn" href="https://g.page/r/Ccm7fCumOcUyEBM/review" target="_blank" rel="noopener">⭐ Give Google Review</a>
+  </div>
+
+  <!-- fullscreen modal for tap-to-view -->
+  <div id="modal" class="modal" onclick="hideModal()"><img id="modalImg" src="" alt=""/></div>
 
   <script>
+    // YOUR API KEY & FOLDER ID (from you)
     const API_KEY = "AIzaSyDmmJoANHpjoA9eq21JaQnkl4S7wK7ld_w";
-    const FOLDER_ID = "1qVz_bYP2lW6Ao9RFOr7N_F6_KT6cvcXN";
-    const url = `https://www.googleapis.com/drive/v3/files?q='${FOLDER_ID}'+in+parents+and+mimeType+contains+'image/'&key=${API_KEY}&fields=files(id,name,mimeType)`;
+    const FOLDER_ID = "1PW5FByxo8va2gpc9l3nZp6bWQQCfRKpC";
 
-    fetch(url)
-      .then(res => res.json())
+    // Drive API endpoint
+    const endpoint = `https://www.googleapis.com/drive/v3/files?q='${FOLDER_ID}'+in+parents+and+mimeType+contains+'image/'&key=${API_KEY}&fields=files(id,name,mimeType,thumbLink,iconLink)`;
+
+    const container = document.getElementById("container");
+
+    fetch(endpoint)
+      .then(r => r.json())
       .then(data => {
-        const container = document.getElementById("content");
-        if (!data.files || data.files.length === 0) {
-          container.innerHTML = `<p class="message">No images available</p>`;
+        // If error or no files
+        if (!data || !data.files || !data.files.length) {
+          container.innerHTML = '<p class="message">No images available</p>';
           return;
         }
+
+        // Create slider
         const slider = document.createElement("div");
         slider.className = "slider";
+
         data.files.forEach(file => {
+          // Use direct "uc" link - folder must be shared publicly for this to work
+          const imgUrl = `https://drive.google.com/uc?id=${file.id}`;
+          const slide = document.createElement("div");
+          slide.className = "slide";
           const img = document.createElement("img");
-          img.src = `https://drive.google.com/uc?id=${file.id}`;
-          slider.appendChild(img);
+          img.src = imgUrl;
+          img.alt = file.name || "photo";
+          // open modal on click
+          img.addEventListener("click", (e) => {
+            showModal(imgUrl);
+          });
+          slide.appendChild(img);
+          slider.appendChild(slide);
         });
+
+        container.innerHTML = "";
         container.appendChild(slider);
+
+        // Auto-scroll every 3.5s (simple)
+        const slides = Array.from(slider.children);
+        let idx = 0;
+        const advance = () => {
+          idx = (idx + 1) % slides.length;
+          slides[idx].scrollIntoView({ behavior: "smooth", inline: "center" });
+        };
+        const auto = setInterval(advance, 3500);
+
+        // Pause auto-scroll on user interaction
+        slider.addEventListener("touchstart", () => clearInterval(auto), { passive: true });
+        slider.addEventListener("mousedown", () => clearInterval(auto));
+
       })
       .catch(err => {
         console.error(err);
-        document.getElementById("content").innerHTML = `<p class="message">Error loading images</p>`;
+        container.innerHTML = '<p class="message">Error loading images</p>';
       });
+
+    // modal helpers
+    function showModal(src) {
+      const modal = document.getElementById("modal");
+      document.getElementById("modalImg").src = src;
+      modal.classList.add("show");
+    }
+    function hideModal() {
+      const modal = document.getElementById("modal");
+      modal.classList.remove("show");
+      document.getElementById("modalImg").src = "";
+    }
   </script>
 </body>
 </html>
