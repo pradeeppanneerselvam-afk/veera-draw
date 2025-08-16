@@ -110,7 +110,7 @@
 <div id="welcomeScreen" class="card">
   <h1>Welcome to Coolie!</h1>
   <p>🎉 Veera Cinemas celebrates with an exciting Lucky Draw! Join now for a chance to win amazing prizes.</p>
-  <a href="https://chat.whatsapp.com/FjKFb5hAOuBDs4HEpenxnB?mode=ac_t" target="_blank" class="btn-whatsapp">📲 Join WhatsApp Group</a>
+  <!-- WhatsApp button removed from here -->
   <a href="https://www.instagram.com/veeracinemas?igsh=aGcxYndmdGs4MTRy" target="_blank" class="btn-insta">📸 Follow on Instagram</a>
   <p>Follow us to participate in the Lucky Draw and grab your chance to win exclusive goodies!</p>
 </div>
@@ -143,7 +143,7 @@
   <div class="modal-content">
     <h2>✅ Success!</h2>
     <p>Your entry has been submitted.</p>
-    <button onclick="closeModal()">OK</button>
+    <button onclick="redirectToWhatsapp()">OK</button>
   </div>
 </div>
 
@@ -282,8 +282,9 @@ document.getElementById("submitEntry").addEventListener("click", async () => {
   document.getElementById("successModal").style.display = "flex";
 });
 
-window.closeModal = function() {
+window.redirectToWhatsapp = function() {
   document.getElementById("successModal").style.display = "none";
+  window.location.href = "https://chat.whatsapp.com/FjKFb5hAOuBDs4HEpenxnB?mode=ac_t";
 };
 </script>
 
