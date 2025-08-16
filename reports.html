@@ -48,7 +48,8 @@
             return `<tr><td>${prize}</td><td>${w.name}</td><td>${w.seat}</td></tr>`;
           }).join('') : '<tr><td colspan="3">No winners</td></tr>'}
         </table>
-        <button onclick='copyWinners(${JSON.stringify(r)})'>📋 Copy Winners</button>
+        <button onclick='copyWinners(${JSON.stringify(r) + "\n 🎁 வெற்றி பெற்றவர்கள் இடைவேளையில் பாக்ஸ் ஆபீஸில் வந்து பரிசுகளை பெற்றுக்கொள்ளவும்
+"})'>📋 Copy Winners</button>
       </div>`;
     });
     html += '</div>';
