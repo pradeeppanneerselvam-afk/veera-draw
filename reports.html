@@ -48,10 +48,24 @@
             return `<tr><td>${prize}</td><td>${w.name}</td><td>${w.seat}</td></tr>`;
           }).join('') : '<tr><td colspan="3">No winners</td></tr>'}
         </table>
+        <button onclick='copyWinners(${JSON.stringify(r)})'>📋 Copy Winners</button>
       </div>`;
     });
     html += '</div>';
     container.innerHTML = html;
+  }
+
+  // Copy winners list (only names + seats, with date header)
+  window.copyWinners = function(report) {
+    let text = `📅 Date: ${report.showTime || '-'}\n🏆 Winners List\n\n`;
+    if (report.winners && report.winners.length) {
+      text += report.winners.map(w => `🎉 ${w.name} - Seat ${w.seat}`).join("\n");
+    } else {
+      text += "No winners";
+    }
+    navigator.clipboard.writeText(text).then(() => {
+      alert("Winners copied to clipboard!");
+    });
   }
 
   document.getElementById('exportBtn').addEventListener('click', async () => {
