@@ -55,9 +55,8 @@
     container.innerHTML = html;
   }
 
-  // Copy winners list (only names + seats, with date header)
+  // Copy winners list (only names + seats, with date header, Tamil note appended)
   window.copyWinners = function(report) {
-    // ✅ Only change: strip time from date
     const dateOnly = report.showTime ? report.showTime.split("T")[0] : '-';
     let text = `📅 Date: ${dateOnly}\n🏆 Winners List\n\n`;
     if (report.winners && report.winners.length) {
@@ -65,6 +64,9 @@
     } else {
       text += "No winners";
     }
+    // ✅ Always append Tamil note
+    text += `\n\n🎁 வெற்றி பெற்றவர்கள் இடைவேளையில் பாக்ஸ் ஆபீஸில் வந்து பரிசுகளை பெற்றுக்கொள்ளவும்`;
+
     navigator.clipboard.writeText(text).then(() => {
       alert("Winners copied to clipboard!");
     });
@@ -78,7 +80,6 @@
     let csv = 'DrawId,ShowTime,Audience,Keychains,TShirts,Winners\n';
     reports.forEach(r => {
       const winners = r.winners ? r.winners.map(w => `${w.name} (${w.seat})`).join('; ') : '';
-      // Escape quotes by doubling them
       const esc = v => (`${v}`.replace(/"/g,'""'));
       csv += `"${esc(r.drawId)}","${esc(r.showTime || '')}",${r.audience || 0},${r.keychains || 0},${r.tshirts || 0},"${esc(winners)}"\n`;
     });
