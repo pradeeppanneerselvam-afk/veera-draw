@@ -57,7 +57,9 @@
 
   // Copy winners list (only names + seats, with date header)
   window.copyWinners = function(report) {
-    let text = `📅 Date: ${report.showTime || '-'}\n🏆 Winners List\n\n`;
+    // ✅ Only change: strip time from date
+    const dateOnly = report.showTime ? report.showTime.split("T")[0] : '-';
+    let text = `📅 Date: ${dateOnly}\n🏆 Winners List\n\n`;
     if (report.winners && report.winners.length) {
       text += report.winners.map(w => `🎉 ${w.name} - Seat ${w.seat}`).join("\n");
     } else {
